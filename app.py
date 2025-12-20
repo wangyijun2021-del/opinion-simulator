@@ -442,4 +442,146 @@ with right:
             "奖助学金/资助政策通知",
             "纪律处分/违纪处理通告",
             "校内活动/讲座报名通知",
-            "疫情
+            "疫情/卫生/公共安全通知",
+            "其他（通用高校公告）",
+        ],
+        index=0,
+    )
+
+    st.markdown("**受众画像（高校版）**")
+    c1, c2 = st.columns(2)
+    with c1:
+        grade = st.selectbox("年级/阶段", ["新生", "大二/大三", "大四/毕业班", "研究生", "混合群体"], index=1)
+        role = st.selectbox("身份", ["普通学生", "宿舍长/楼委", "学生干部", "社团成员", "考研/保研群体", "留学生/交流生", "混合"], index=0)
+    with c2:
+        gender = st.selectbox("性别", ["不指定", "偏男性", "偏女性", "混合"], index=0)
+        sensitivity = st.selectbox("情绪敏感度", ["低", "中", "高"], index=1)
+
+    custom = st.text_input("画像补充（可选）", placeholder="例如：近期对宿舍检查较敏感，担心被通报。")
+
+    profile = {
+        "grade": grade,
+        "role": role,
+        "gender": gender,
+        "sensitivity": sensitivity,
+        "custom": custom,
+    }
+
+    analyze_btn = st.button("分析并生成改写", type="primary", use_container_width=True)
+
+st.divider()
+
+# =========================
+# Run
+# =========================
+if analyze_btn:
+    if not text.strip():
+        st.warning("请先输入一段文本。")
+    else:
+        with st.spinner("正在分析…"):
+            result = analyze(text, scenario, profile)
+        st.session_state.result = result
+        st.session_state.last_inputs = {"text": text, "scenario": scenario, "profile": profile}
+
+result = st.session_state.result
+current_text = st.session_state.last_inputs.get("text", "")
+
+# =========================
+# Output
+# =========================
+if not result:
+    st.info("请输入文本并点击「分析并生成改写」。")
+else:
+    render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
+
+    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+
+    # ---- Rewrite area: single original, three tabs, no repeated original ----
+    st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
+
+    rewrites = result.get("rewrites", []) or []
+    # Ensure three items
+    while len(rewrites) < 3:
+        rewrites.append({"name": f"版本{len(rewrites)+1}", "pred_risk_score": "-", "text": "", "why": ""})
+    rewrites = rewrites[:3]
+
+    # Build tab order
+    name_to_rw = { (rw.get("name") or "").strip(): rw for rw in rewrites }
+    tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
+    for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
+        rw = name_to_rw.get(tname, {})
+        with tab:
+            pr = rw.get("pred_risk_score", "-")
+            why = rw.get("why", "")
+            st.markdown(
+                f"""
+                <div class="card">
+                  <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+                    <div style="font-weight:850; font-size:14px; line-height:1.25;">{html.escape(tname)}</div>
+                    <div class="pill">预测风险 {html.escape(str(pr))}</div>
+                  </div>
+                  <div class="muted clamp3" style="margin-top:10px; font-size:13px; line-height:1.45;">
+                    {html.escape(str(why))}
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.expander("查看改写全文", expanded=False):
+                st.write(rw.get("text", ""))
+
+    # ---- Detailed analysis: risk + emotion ----
+    st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+    with st.expander("查看详细分析", expanded=False):
+        tab1, tab2 = st.tabs(["风险点", "学生情绪"])
+
+        with tab1:
+            issues = result.get("issues", []) or []
+            if not issues:
+                st.info("未识别到明显风险点。")
+            else:
+                phrases = []
+                for it in issues:
+                    ev = (it.get("evidence") or "").strip()
+                    if ev:
+                        phrases.append(ev)
+
+                # Original appears ONCE here (with highlight)
+                st.markdown("**原文（标注）**")
+                st.markdown(highlight_text_html(current_text, phrases), unsafe_allow_html=True)
+
+                st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+                st.markdown("**风险点列表**")
+                for i, it in enumerate(issues, start=1):
+                    st.markdown(f"**{i}. {it.get('title','(未命名)')}**")
+                    st.markdown(f"- 触发片段：{it.get('evidence','')}")
+                    st.markdown(f"- 原因：{it.get('why','')}")
+                    st.markdown(f"- 建议：{it.get('rewrite_tip','')}")
+                    st.divider()
+
+        with tab2:
+            emos = result.get("student_emotions", []) or []
+            if not emos:
+                st.info("未生成情绪画像。")
+            else:
+                for e in emos:
+                    intensity = clamp01(e.get("intensity", 0))
+                    st.markdown(
+                        f"""
+                        <div class='card'>
+                          <div>
+                            <span class='badge'>{html.escape(str(e.get('group','群体')))}</span>
+                            <span class='badge'>情绪：{html.escape(str(e.get('sentiment','')))}</span>
+                            <span class='badge'>强度：{intensity:.2f}</span>
+                          </div>
+                          <div style='margin-top:10px;' class='mono'>“{html.escape(str(e.get('sample_comment','')))}”</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                    st.write("")
+
+st.markdown(
+    "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
+    unsafe_allow_html=True,
+)
