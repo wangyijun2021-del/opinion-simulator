@@ -1,334 +1,350 @@
 import os
-import json
 import re
+import json
 import time
 import requests
-import pandas as pd
 import streamlit as st
 
-# -----------------------
-# UI 基础配置
-# -----------------------
-st.set_page_config(page_title="高校舆情风险与学生情绪预测系统", layout="wide")
+# =========================
+# Page config
+# =========================
+st.set_page_config(
+    page_title="高校舆情风险与学生情绪预测系统",
+    layout="wide",
+)
 
-CUSTOM_CSS = """
-<style>
-:root { --muted:#6b7280; }
-.block-title{font-size:28px;font-weight:800;margin:0 0 6px 0;}
-.block-sub{color:var(--muted);margin:0 0 18px 0;}
-.kpi{padding:14px 14px;border-radius:14px;background:#0b1220;border:1px solid rgba(255,255,255,0.08);}
-.kpi h3{margin:0;font-size:12px;color:rgba(255,255,255,0.6);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;}
-.kpi .big{font-size:26px;font-weight:800;margin-top:6px;}
-.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);}
-.card{padding:16px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);}
-small{color:var(--muted);}
-</style>
-"""
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+# =========================
+# Basic styles (simple but nicer)
+# =========================
+st.markdown(
+    """
+    <style>
+      .block-container {padding-top: 2rem; padding-bottom: 2rem;}
+      .title {font-size: 34px; font-weight: 800; margin-bottom: 0.2rem;}
+      .subtitle {color: #6b7280; font-size: 14px; margin-bottom: 1.2rem;}
+      .card {border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; padding: 14px 16px; background: #fff;}
+      .badge {display:inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; border:1px solid rgba(0,0,0,0.12); color:#111827;}
+      .muted {color:#6b7280;}
+      .mono {font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-st.markdown('<div class="block-title">🎓 高校舆情风险与学生情绪预测系统</div>', unsafe_allow_html=True)
-st.markdown('<div class="block-sub">面向高校通知/公告/处分/活动/住宿后勤等场景：识别风险点、模拟学生群体情绪反馈，并给出更稳妥的改写建议。</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">🎓 高校舆情风险与学生情绪预测系统</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">用于高校通知/公告/制度发布前：识别争议点、预测学生情绪与舆论走势，并生成更稳妥的改写方案。</div>', unsafe_allow_html=True)
 
-# -----------------------
-# DeepSeek 配置
-# -----------------------
+# =========================
+# DeepSeek config
+# =========================
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 API_URL = "https://api.deepseek.com/chat/completions"
 
 if not DEEPSEEK_API_KEY:
-    st.error("未检测到 DEEPSEEK_API_KEY。若在 Streamlit Cloud：请到 Manage app → Secrets 添加 DEEPSEEK_API_KEY。")
+    st.error("未检测到 DEEPSEEK_API_KEY。若在 Streamlit Cloud：Manage app → Secrets 添加 DEEPSEEK_API_KEY。若本地：终端执行 export DEEPSEEK_API_KEY='你的key'")
     st.stop()
 
-# -----------------------
-# 高校场景预设（更好用）
-# -----------------------
-SCENARIOS = {
-    "住宿后勤": "宿舍管理、卫生检查、空调供暖、维修、用电、夜间管理等。重点关注：对学生的尊重、执行透明度、程序正义、‘一刀切’措辞、惩罚导向。",
-    "纪律处分": "违纪通报、处分决定、考试纪律、学术诚信等。重点关注：措辞是否羞辱化、标签化；是否给出申诉/流程；是否过度公开个人信息。",
-    "奖助评优": "奖学金、助学金、困难认定、评优评奖等。重点关注：公平性、指标解释、争议点、对困难群体的保护。",
-    "教学考试": "考试安排、补考缓考、课程调整、教学管理等。重点关注：可执行性、对特殊情况的照顾、信息完整性。",
-    "活动宣传": "讲座、团学活动、志愿服务、招生宣传等。重点关注：是否夸大、是否强制、是否引发对立（‘必须’‘不得’）。",
-    "安全应急": "突发事件通报、疫情防控、消防演练等。重点关注：恐慌扩散、信息透明、谣言空间、安抚与行动指引。"
-}
-
-# -----------------------
-# 兜底（本地规则分析）确保永不崩
-# -----------------------
-def heuristic_analysis(text: str) -> dict:
-    hard_words = {
-        "严查": "容易被理解为高压治理，触发紧张与不安。",
-        "从严": "惩罚导向明显，可能引发对程序正义的质疑。",
-        "通报批评": "带有公开羞辱风险，需注意范围与方式。",
-        "处分": "强惩罚信号，需补充流程与申诉机制。",
-        "清退": "极端处置用语，容易引发恐慌和对抗。",
-        "一律": "一刀切信号强，容易引发公平性质疑。",
-        "不得": "命令式强，容易引起反感，建议配理由与替代方案。",
-        "必须": "强制感强，建议加例外与帮助渠道。",
-    }
-    groups = ["学生", "辅导员", "家长", "一线后勤", "考研/保研群体", "困难学生"]
-
-    found = [w for w in hard_words if w in text]
-    risk = 20 + 15 * len(found)
-    if any(w in text for w in ["罚", "记过", "留校察看", "开除", "处分"]):
-        risk += 20
-    risk = min(100, max(0, risk))
-
-    if risk < 30:
-        level = "low"
-    elif risk < 70:
-        level = "medium"
-    else:
-        level = "high"
-
-    high_risk_words = [{"word": w, "reason": hard_words[w]} for w in found]
-
-    audiences = [
-        {
-            "label": "普通在校学生",
-            "emotion_score": -0.2 if risk >= 50 else 0.0,
-            "emotion_label": "轻度负面/中性",
-            "keywords": ["担心", "观望", "希望更明确"],
-            "comments": ["能不能说清楚规则和执行标准？", "希望不要一刀切，给特殊情况留空间。"]
-        },
-        {
-            "label": "规则敏感型学生（关注程序正义）",
-            "emotion_score": -0.5 if risk >= 50 else -0.2,
-            "emotion_label": "中度负面",
-            "keywords": ["质疑程序", "担忧公正", "要求解释"],
-            "comments": ["处分/检查的依据是什么？有没有申诉渠道？", "请公开流程，不要只给结论。"]
-        },
-        {
-            "label": "家长群体",
-            "emotion_score": 0.2 if "安全" in text else 0.0,
-            "emotion_label": "略微正面/中性",
-            "keywords": ["关注安全", "担心影响学习", "希望沟通"],
-            "comments": ["只要安全第一，措施清楚就支持。", "也请考虑孩子学习和生活的实际困难。"]
-        }
-    ]
-
-    rewrite = []
-    softened = text
-    soften_map = {"严查": "重点排查", "从严": "依规处理", "一律": "原则上", "不得": "请避免", "必须": "请尽量"}
-    for k, v in soften_map.items():
-        softened = softened.replace(k, v)
-
-    rewrite.append({
-        "rewritten_text": softened + "（并明确执行标准、时间范围与咨询/申诉渠道）",
-        "new_risk_score": max(0, risk - 20),
-        "brief_reason": "弱化高压措辞，并补全程序与沟通渠道，降低被误读与对抗情绪。"
-    })
-
-    return {
-        "risk_score": risk,
-        "risk_level": level,
-        "overall_explanation": "基于本地规则进行兜底分析（模型输出非 JSON 或请求异常时启用）。",
-        "high_risk_words": high_risk_words,
-        "audiences": audiences,
-        "rewrite_suggestions": rewrite
-    }
-
-# -----------------------
-# JSON 解析增强：从模型返回中“抠出 JSON”
-# -----------------------
-def safe_json_loads(text: str) -> dict:
+# =========================
+# Helpers
+# =========================
+def safe_extract_json(text: str):
     """
-    支持：
-    - 纯 JSON
-    - ```json ... ```
-    - JSON 前后带解释文字
+    Robustly extract JSON object from model output.
+    Handles code fences, leading/trailing explanations, etc.
     """
-    text = text.strip()
+    if not text:
+        return None, "empty_response"
 
-    # 1) 直接尝试
+    # Remove code fences
+    cleaned = re.sub(r"```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
+    cleaned = cleaned.replace("```", "").strip()
+
+    # Try direct parse
     try:
-        return json.loads(text)
+        return json.loads(cleaned), None
     except Exception:
         pass
 
-    # 2) 尝试从 ```json ...``` 中提取
-    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL | re.IGNORECASE)
-    if m:
-        return json.loads(m.group(1))
-
-    # 3) 尝试提取第一个 { 到最后一个 }
-    start = text.find("{")
-    end = text.rfind("}")
+    # Try to find the first {...} block
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
     if start != -1 and end != -1 and end > start:
-        return json.loads(text[start:end+1])
+        candidate = cleaned[start:end+1]
+        # common quote issues
+        candidate = candidate.replace("“", "\"").replace("”", "\"").replace("’", "'").replace("‘", "'")
+        try:
+            return json.loads(candidate), None
+        except Exception as e:
+            return None, f"json_parse_failed: {e}"
 
-    raise json.JSONDecodeError("No JSON object could be decoded", text, 0)
+    return None, "no_json_object_found"
 
-# -----------------------
-# DeepSeek 调用（高校专用 prompt）
-# -----------------------
-def analyze_with_deepseek(text: str, scenario: str, audience_profile: str) -> dict:
-    scenario_desc = SCENARIOS.get(scenario, "")
-    profile_part = f"重点受众画像：{audience_profile}。" if audience_profile else "重点受众画像：默认以在校学生为主。"
+def local_fallback(text: str):
+    """
+    If model returns non-JSON or request fails, use simple heuristic fallback
+    so the app never crashes.
+    """
+    # very rough heuristic
+    risky_words = ["严肃处理", "通报批评", "纪律处分", "一律", "从严", "不得", "立即", "清退", "追责", "强制", "处分"]
+    score = 10
+    hits = [w for w in risky_words if w in text]
+    score += min(70, len(hits) * 10)
 
-    prompt = f"""
-你是一名高校宣传/学生工作/舆情风控顾问。请对“高校通知/公告/制度/处分/活动文本”做发布前风险评估，并模拟学生群体情绪。
+    level = "LOW" if score < 30 else ("MEDIUM" if score < 60 else "HIGH")
+    issues = []
+    if hits:
+        issues.append({
+            "title": "措辞强硬/惩戒导向",
+            "evidence": "命中词：" + "、".join(hits),
+            "why": "学生易解读为高压管理，触发对抗性情绪或二次传播。",
+            "rewrite_tip": "尽量增加依据、范围、申诉渠道，用“提醒+规范+支持”替代单纯惩戒。"
+        })
 
-场景：{scenario}
-场景说明：{scenario_desc}
-{profile_part}
+    emotions = [
+        {"group": "普通学生", "sentiment": "紧张/被约束", "intensity": 0.55, "sample_comment": "能不能说清楚标准和范围？"},
+        {"group": "宿舍长/楼委", "sentiment": "配合但担心执行成本", "intensity": 0.45, "sample_comment": "希望给个可操作的检查清单。"},
+        {"group": "维权敏感群体", "sentiment": "警惕/抵触", "intensity": 0.65, "sample_comment": "不要搞一刀切和随意处分。"},
+    ]
 
-请严格只输出 JSON（不要输出任何解释文字，不要用 Markdown 代码块）。返回结构如下：
+    rewrites = [
+        {
+            "name": "更稳妥版本（信息完整、语气更稳）",
+            "pred_risk_score": max(5, score - 20),
+            "text": (
+                "【温馨提醒】近期宿舍用电进入高峰期。为降低安全隐患，请同学们今晚完成一次自查与同寝互查："
+                "（1）不使用外观破损、线路老化的电器（尤其发热类）；"
+                "（2）插排避免超负荷与多重串接，如出现发烫/接触不良请及时停用并报修；"
+                "（3）离开宿舍前请关闭电源，避免长时间待机。"
+                "如需帮助可联系宿管/辅导员，学校将提供报修与咨询支持。感谢大家共同维护宿舍安全。"
+            ),
+            "why": "弱化惩戒语气，补充可执行清单与求助渠道，降低误读与对抗情绪。"
+        }
+    ]
 
+    return {
+        "risk_score": score,
+        "risk_level": level,
+        "summary": "基于本地规则进行兜底分析（模型输出非 JSON 或请求异常时启用）。",
+        "issues": issues,
+        "student_emotions": emotions,
+        "rewrites": rewrites
+    }
+
+def call_deepseek(system_prompt: str, user_prompt: str, model: str = "deepseek-chat"):
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "temperature": 0.3,
+    }
+    r = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+    r.raise_for_status()
+    data = r.json()
+    return data["choices"][0]["message"]["content"]
+
+def analyze(text: str, scenario: str, profile: dict):
+    system_prompt = (
+        "你是高校舆情风控与学生情绪分析专家。"
+        "你必须输出【严格 JSON】且只能输出 JSON，不能有任何解释、前后缀、代码块标记。"
+        "JSON 必须可被 Python json.loads 直接解析。"
+    )
+
+    # 强制“改写必须不同”，避免模型照抄
+    user_prompt = f"""
+请分析下面“高校场景文本”的舆情风险与学生情绪，并生成改写方案。
+
+【场景】{scenario}
+
+【受众画像】
+- 年级/阶段：{profile.get("grade")}
+- 身份：{profile.get("role")}
+- 性别：{profile.get("gender")}
+- 情绪敏感度：{profile.get("sensitivity")}
+- 额外画像：{profile.get("custom")}
+
+【原文】
+{text}
+
+【输出要求】请输出严格 JSON，结构如下（字段名必须一致）：
 {{
-  "risk_score": 0-100,
-  "risk_level": "low"|"medium"|"high",
-  "overall_explanation": "中文说明",
-  "high_risk_words": [{{"word":"", "reason":""}}, ...],
-  "audiences": [
+  "risk_score": 0-100的整数,
+  "risk_level": "LOW"|"MEDIUM"|"HIGH",
+  "summary": "一句话总结（不要空泛）",
+  "issues": [
     {{
-      "label": "群体名称（高校语境）",
-      "emotion_score": -1~1,
-      "emotion_label": "强烈负面/中度负面/中性/略微正面/强烈正面",
-      "keywords": ["3-5个词"],
-      "comments": ["模拟评论1", "模拟评论2"]
+      "title": "风险点标题",
+      "evidence": "原文中触发风险的片段（可引用短语）",
+      "why": "为什么会引发学生情绪/传播风险（高校语境）",
+      "rewrite_tip": "可操作的改写建议"
     }}
   ],
-  "rewrite_suggestions": [
+  "student_emotions": [
     {{
-      "rewritten_text": "改写后的完整文本（保持信息完整，语气更稳）",
-      "new_risk_score": 0-100,
-      "brief_reason": "一句话解释"
+      "group": "学生群体名称（例如：普通学生/考研学生/新生/宿舍长/社团干部等）",
+      "sentiment": "主要情绪（例如：焦虑/抵触/理解/支持/讽刺）",
+      "intensity": 0到1的小数,
+      "sample_comment": "一句典型评论（仿真口吻）"
+    }}
+  ],
+  "rewrites": [
+    {{
+      "name": "方案名称",
+      "pred_risk_score": 0-100整数（预测改写后风险）,
+      "text": "改写后的完整文本",
+      "why": "为何能降低风险（具体）"
     }}
   ]
 }}
 
-需要分析的文本：
-\"\"\"{text}\"\"\"
-""".strip()
-
-    headers = {
-        "Content-Type": "application/json; charset=utf-8",
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-    }
-
-    payload = {
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
-    }
+【硬性规则】
+1) rewrites 里至少给 3 个方案；每个方案的 text 必须与原文明显不同（不得照抄原句结构/句式），但含义要一致；
+2) 必须补充“执行标准/时间范围/咨询或申诉渠道”中的至少一个要素；
+3) intensity 必须在 0~1 之间。
+"""
 
     try:
-        r = requests.post(API_URL, headers=headers, json=payload, timeout=60)
-        r.raise_for_status()
-        data = r.json()
-        content = data["choices"][0]["message"]["content"]
-        return safe_json_loads(content)
+        content = call_deepseek(system_prompt, user_prompt)
+        parsed, err = safe_extract_json(content)
+        if parsed is None:
+            # fallback
+            return local_fallback(text)
+        return parsed
     except Exception:
-        return heuristic_analysis(text)
+        return local_fallback(text)
 
-# -----------------------
-# UI：左侧输入 / 右侧结果
-# -----------------------
+# =========================
+# UI inputs
+# =========================
 left, right = st.columns([1, 2], gap="large")
 
 with left:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    scenario = st.selectbox("📌 选择高校场景", list(SCENARIOS.keys()))
-    st.caption(SCENARIOS[scenario])
+    st.markdown("#### ✍️ 文本输入")
+    text = st.text_area(
+        "请输入要分析的通知/公告/制度文本（越接近真实越好）",
+        height=240,
+        placeholder="例如：今晚宿舍将进行用电检查……"
+    )
 
-    text = st.text_area("📝 输入通知/公告/制度文本", height=190, placeholder="例如：为保障宿舍安全，将对大功率电器开展检查...")
-    with st.expander("🎯 高级设置：重点受众画像（可选）", expanded=False):
-        role = st.multiselect("身份/角色（可多选）", ["本科生", "研究生", "新生", "毕业年级", "学生干部", "宿舍长", "困难学生", "国际学生", "家长"])
-        mood = st.selectbox("情绪敏感度", ["未指定", "高", "中", "低"], index=0)
-        custom = st.text_area("自定义画像（优先）", height=80, placeholder="例如：大一新生，刚入学，宿舍生活不熟悉，对管理措施较敏感。")
+    st.markdown("#### 🧭 场景预设")
+    scenario = st.selectbox(
+        "选择发布场景",
+        [
+            "宿舍与安全管理通知",
+            "课程/考试/成绩相关通知",
+            "奖助学金/资助政策通知",
+            "纪律处分/违纪处理通告",
+            "校内活动/讲座报名通知",
+            "疫情/卫生/公共安全通知",
+            "其他（通用高校公告）",
+        ],
+        index=0
+    )
 
-    profile_parts = []
-    if role: profile_parts.append("、".join(role))
-    if mood != "未指定": profile_parts.append(f"敏感度{mood}")
-    audience_profile = custom.strip() if custom.strip() else ("；".join(profile_parts)).strip()
+    st.markdown("#### 👤 受众画像（高校版）")
+    c1, c2 = st.columns(2)
+    with c1:
+        grade = st.selectbox("年级/阶段", ["新生", "大二/大三", "大四/毕业班", "研究生", "混合群体"], index=4)
+        role = st.selectbox("身份", ["普通学生", "宿舍长/楼委", "学生干部", "社团成员", "考研/保研群体", "留学生/交流生", "混合"], index=0)
+    with c2:
+        gender = st.selectbox("性别", ["不指定", "偏男性", "偏女性", "混合"], index=0)
+        sensitivity = st.selectbox("情绪敏感度", ["低", "中", "高"], index=1)
 
-    run = st.button("🚀 开始分析", type="primary", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    custom = st.text_input("自定义画像补充（可选）", placeholder="例如：近期对宿舍检查很敏感、担心被通报、容易在社媒吐槽。")
+
+    profile = {
+        "grade": grade,
+        "role": role,
+        "gender": gender,
+        "sensitivity": sensitivity,
+        "custom": custom
+    }
+
+    analyze_btn = st.button("开始分析", type="primary", use_container_width=True)
 
 with right:
-    if run:
+    st.markdown("#### 📊 分析结果")
+    if analyze_btn:
         if not text.strip():
-            st.warning("请先输入文本。")
+            st.warning("先输入一段文本再分析。")
         else:
             with st.spinner("正在分析（DeepSeek）..."):
-                result = analyze_with_deepseek(text, scenario, audience_profile)
+                result = analyze(text, scenario, profile)
 
             risk_score = int(result.get("risk_score", 0))
-            risk_level = result.get("risk_level", "medium")
-            explanation = result.get("overall_explanation", "")
-            high_risk_words = result.get("high_risk_words", [])
-            audiences = result.get("audiences", [])
-            rewrites = result.get("rewrite_suggestions", [])
+            risk_level = result.get("risk_level", "LOW")
+            summary = result.get("summary", "")
 
-            # KPI 行
-            k1, k2, k3 = st.columns([1,1,2], gap="large")
+            k1, k2, k3 = st.columns([1, 1, 2], gap="medium")
             with k1:
-                st.markdown('<div class="kpi"><h3>Risk Score</h3><div class="big">{}</div></div>'.format(risk_score), unsafe_allow_html=True)
+                st.markdown('<div class="card"><div class="muted">RISK SCORE</div>'
+                            f'<div style="font-size:40px;font-weight:800;margin-top:6px;">{risk_score}</div></div>',
+                            unsafe_allow_html=True)
             with k2:
-                badge = "low" if risk_level == "low" else ("medium" if risk_level == "medium" else "high")
-                st.markdown('<div class="kpi"><h3>Risk Level</h3><div class="big"><span class="badge">{}</span></div></div>'.format(badge.upper()), unsafe_allow_html=True)
+                st.markdown('<div class="card"><div class="muted">RISK LEVEL</div>'
+                            f'<div style="font-size:28px;font-weight:800;margin-top:12px;">{risk_level}</div></div>',
+                            unsafe_allow_html=True)
             with k3:
-                st.markdown('<div class="kpi"><h3>Summary</h3><div style="margin-top:8px;color:rgba(255,255,255,0.85);line-height:1.4;">{}</div></div>'.format(explanation), unsafe_allow_html=True)
+                st.markdown('<div class="card"><div class="muted">SUMMARY</div>'
+                            f'<div style="font-size:18px;font-weight:700;margin-top:12px;">{summary}</div></div>',
+                            unsafe_allow_html=True)
 
-            st.progress(min(max(risk_score/100, 0.0), 1.0))
-            st.markdown("")
+            st.progress(min(1.0, max(0.0, risk_score / 100.0)))
 
             tab1, tab2, tab3 = st.tabs(["⚠️ 风险点", "🎭 学生情绪", "✍️ 改写建议"])
 
             with tab1:
-                st.subheader("风险词/敏感表达")
-                if not high_risk_words:
-                    st.success("未识别到明显高风险词（仍建议结合实际语境复核）。")
+                issues = result.get("issues", [])
+                if not issues:
+                    st.info("未识别到明显风险点（或文本较中性）。")
                 else:
-                    for it in high_risk_words:
-                        st.markdown(f"- **{it.get('word','')}**：{it.get('reason','')}")
-                st.markdown("")
+                    for i, it in enumerate(issues, start=1):
+                        st.markdown(f"**{i}. {it.get('title','(未命名风险点)')}**")
+                        st.markdown(f"- **触发片段**：{it.get('evidence','')}")
+                        st.markdown(f"- **为什么危险**：{it.get('why','')}")
+                        st.markdown(f"- **改写建议**：{it.get('rewrite_tip','')}")
+                        st.divider()
 
             with tab2:
-                st.subheader("典型受众群体情绪模拟（高校语境）")
-                if not audiences:
-                    st.info("暂无受众情绪结果。")
+                emos = result.get("student_emotions", [])
+                if not emos:
+                    st.info("未生成情绪画像。")
                 else:
-                    rows = []
-                    for a in audiences:
-                        rows.append({
-                            "受众群体": a.get("label",""),
-                            "情绪评分": a.get("emotion_score", 0),
-                            "情绪标签": a.get("emotion_label",""),
-                            "关键词": " / ".join(a.get("keywords", []))
-                        })
-                        st.markdown(f"**{a.get('label','')}**")
-                        st.write(f"情绪：{a.get('emotion_label','')}（{a.get('emotion_score',0)}）")
-                        for c in a.get("comments", [])[:2]:
-                            st.write(f"💬 {c}")
-                        st.markdown("---")
-
-                    try:
-                        df = pd.DataFrame(rows).set_index("受众群体")[["情绪评分"]]
-                        st.bar_chart(df)
-                    except Exception:
-                        pass
+                    for e in emos:
+                        st.markdown(
+                            f"<div class='card'>"
+                            f"<div><span class='badge'>{e.get('group','群体')}</span> "
+                            f"<span class='badge'>情绪：{e.get('sentiment','')}</span> "
+                            f"<span class='badge'>强度：{e.get('intensity',0)}</span></div>"
+                            f"<div style='margin-top:10px;' class='mono'>“{e.get('sample_comment','')}”</div>"
+                            f"</div>",
+                            unsafe_allow_html=True
+                        )
+                        st.write("")
 
             with tab3:
-                st.subheader("更稳妥的发布版本（信息完整、语气更稳）")
+                rewrites = result.get("rewrites", [])
                 if not rewrites:
-                    st.info("暂无改写建议。")
+                    st.info("未生成改写方案。")
                 else:
-                    options = [f"方案 {i+1}（预测风险 {rw.get('new_risk_score',0)}）" for i, rw in enumerate(rewrites)]
-                    pick = st.radio("选择一个方案查看：", options, horizontal=True)
-                    idx = options.index(pick)
-                    chosen = rewrites[idx]
+                    options = [f"{i+1}. {rw.get('name','方案')}" for i, rw in enumerate(rewrites)]
+                    idx = st.radio("选择一个方案查看：", list(range(len(options))), format_func=lambda i: options[i])
+                    rw = rewrites[idx]
 
-                    cL, cR = st.columns(2, gap="large")
-                    with cL:
-                        st.markdown('<div class="card">', unsafe_allow_html=True)
-                        st.markdown("**原始文本**")
+                    st.markdown("### 更稳妥的发布版本")
+                    st.markdown(f"- **预测风险**：`{rw.get('pred_risk_score', '-')}`")
+                    st.markdown(f"- **为什么更稳**：{rw.get('why','')}")
+                    cA, cB = st.columns(2, gap="large")
+                    with cA:
+                        st.markdown("#### 原始文本")
                         st.write(text)
-                        st.markdown('</div>', unsafe_allow_html=True)
+                    with cB:
+                        st.markdown("#### 推荐改写")
+                        st.write(rw.get("text", ""))
 
-                    with cR:
-                        st.markdown('<div class="card">', unsafe_allow_html=True)
-                        st.markdown("**推荐改写**")
-                        st.write(chosen.get("rewritten_text",""))
-                        st.caption(chosen.get("brief_reason",""))
-                        st.markdown('</div>', unsafe_allow_html=True)
+                    st.caption("提示：如果你发现方案仍然“几乎没改”，一般是模型输出不稳定；本版本已尽量用 prompt 和解析做了约束。")
