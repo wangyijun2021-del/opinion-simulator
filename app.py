@@ -14,11 +14,19 @@ st.set_page_config(
 )
 
 # =========================
-# Styles (clean, product-ish)
+# Styles (clean + formal + premium)
 # =========================
 st.markdown(
     """
     <style>
+      /* Background (subtle, professional) */
+      body {
+        background:
+          radial-gradient(1200px 600px at 15% 0%, rgba(59,130,246,.08), transparent 60%),
+          radial-gradient(900px 500px at 85% 10%, rgba(16,185,129,.06), transparent 55%),
+          #ffffff;
+      }
+
       .block-container {padding-top: 2.0rem; padding-bottom: 2.0rem; max-width: 1120px;}
       #MainMenu {visibility: hidden;}
       footer {visibility: hidden;}
@@ -36,10 +44,14 @@ st.markdown(
         margin-bottom: 1.2rem;
         line-height: 1.6;
       }
-      .section-h {
+
+      /* Section heading: no emoji, subtle emphasis */
+      .section-h{
         font-size: 16px;
-        font-weight: 780;
+        font-weight: 800;
         margin: 0.2rem 0 0.8rem 0;
+        border-left: 3px solid rgba(59,130,246,.45);
+        padding-left: 10px;
       }
 
       .card {
@@ -67,19 +79,39 @@ st.markdown(
       .bar {height: 10px; border-radius: 999px; background: rgba(17,24,39,.08); overflow: hidden; margin-top: 10px;}
       .bar > div {height: 100%; border-radius: 999px; background: rgba(59,130,246,.86);}
 
-      .panel {
-        border-radius: 18px;
-        padding: 14px 16px;
-        background: rgba(17,24,39,.03);
-        border: 1px solid rgba(0,0,0,.03);
-      }
-
       /* Highlight */
       mark.hl {
-        background: rgba(245, 158, 11, 0.25); /* amber-ish */
+        background: rgba(245, 158, 11, 0.25);
         color: inherit;
         padding: 0 .18em;
         border-radius: .35em;
+      }
+
+      /* Decision card compactness */
+      .clamp2{
+        display:-webkit-box;
+        -webkit-line-clamp:2;
+        -webkit-box-orient:vertical;
+        overflow:hidden;
+      }
+      .clamp3{
+        display:-webkit-box;
+        -webkit-line-clamp:3;
+        -webkit-box-orient:vertical;
+        overflow:hidden;
+      }
+      .card-head{
+        display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      }
+      .card-title{
+        font-weight:850; font-size:14px; line-height:1.25;
+      }
+      .pill{
+        font-size:12px; padding:4px 10px; border-radius:999px;
+        border:1px solid rgba(0,0,0,.08);
+        background:rgba(255,255,255,.72);
+        color:rgba(17,24,39,.78);
+        white-space:nowrap;
       }
 
       /* Footnote */
@@ -93,7 +125,27 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown('<div class="title">🎓 高校舆情风险与学生情绪预测系统</div>', unsafe_allow_html=True)
+# Header (no emoji)
+st.markdown('<div class="title">高校舆情风险与学生情绪预测系统</div>', unsafe_allow_html=True)
+
+# Subtle right-top line illustration (SVG)
+st.markdown(
+    """
+    <div style="position:relative; margin-top:-8px;">
+      <div style="position:absolute; right:0; top:-22px; opacity:0.12; pointer-events:none;">
+        <svg width="260" height="140" viewBox="0 0 260 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 95C70 55 115 45 150 55C185 65 210 90 235 115" stroke="#111827" stroke-width="2"/>
+          <path d="M40 110C85 80 125 75 155 82C185 89 205 105 225 125" stroke="#111827" stroke-width="2"/>
+          <circle cx="55" cy="78" r="4" fill="#111827"/>
+          <circle cx="160" cy="60" r="4" fill="#111827"/>
+          <circle cx="210" cy="108" r="4" fill="#111827"/>
+        </svg>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.markdown(
     '<div class="subtitle">输入通知/公告/制度文本，选择场景与受众画像，系统给出风险点、学生情绪态势与改写建议。</div>',
     unsafe_allow_html=True,
@@ -165,9 +217,10 @@ def local_fallback(text: str):
         {"group": "敏感群体", "sentiment": "警惕/抵触", "intensity": 0.65, "sample_comment": "别一刀切，给个申诉渠道。"},
     ]
 
+    # Force three strategy names for consistent UX
     rewrites = [
         {
-            "name": "版本 A（更清晰）",
+            "name": "更清晰",
             "pred_risk_score": max(5, score - 20),
             "text": (
                 "【通知】今晚将进行宿舍用电安全巡查。\n"
@@ -175,8 +228,29 @@ def local_fallback(text: str):
                 "请同学在上述时段尽量保持宿舍可联系；如确有课程/实验/兼职冲突，可通过____（线上登记/宿舍群）说明情况并预约替代检查。\n"
                 "如有疑问，可联系宿管/辅导员：____。感谢配合。"
             ),
-            "why": "补齐时间窗口、范围与替代方式，降低“被迫等待/不透明”的抵触。",
-        }
+            "why": "补齐时间窗口、范围与替代方式，减少误读与抵触。",
+        },
+        {
+            "name": "更安抚",
+            "pred_risk_score": max(5, score - 15),
+            "text": (
+                "【提醒】为降低宿舍用电安全隐患，今晚将进行例行巡查。\n"
+                "我们会尽量减少对同学学习生活的打扰，如遇课程/实验冲突，可通过____登记说明，安排替代检查方式。\n"
+                "如需帮助或有疑问，可联系宿管/辅导员：____。感谢大家理解与配合。"
+            ),
+            "why": "强调目的与减少打扰的承诺，降低对抗性情绪。",
+        },
+        {
+            "name": "更可执行",
+            "pred_risk_score": max(5, score - 25),
+            "text": (
+                "【通知】今晚开展宿舍用电安全巡查。\n"
+                "请在____前完成一次用电自查（插排串接/大功率电器/线路老化等），并保持宿舍可联系。\n"
+                "抽查覆盖范围：____；如无法配合现场检查，可通过____提交自查结果并预约复核。\n"
+                "咨询渠道：宿管/辅导员____。"
+            ),
+            "why": "给出清单、范围与替代流程，提高可执行性与透明度。",
+        },
     ]
 
     return {
@@ -215,8 +289,9 @@ def analyze(text: str, scenario: str, profile: dict):
         "JSON 必须可被 Python json.loads 直接解析。"
     )
 
+    # Force productized rewrite strategies
     user_prompt = f"""
-请分析下面高校文本的传播风险与学生情绪，并给出改写版本。
+请分析下面高校文本的传播风险与学生情绪，并给出三种改写版本。
 
 【场景】{scenario}
 
@@ -253,16 +328,16 @@ def analyze(text: str, scenario: str, profile: dict):
   ],
   "rewrites": [
     {{
-      "name": "方案名称（例如：版本A/版本B/版本C）",
+      "name": "必须为：更清晰 / 更安抚 / 更可执行",
       "pred_risk_score": 0-100整数（预测改写后风险）,
       "text": "改写后的完整文本（含义一致，但表达要明显不同）",
-      "why": "为何更稳（具体）"
+      "why": "用 1-2 句话说明为何更稳（尽量简短）"
     }}
   ]
 }}
 
 【硬性规则】
-1) rewrites 至少给 3 个版本；
+1) rewrites 必须且只能包含 3 个版本，按顺序输出：更清晰、更安抚、更可执行；
 2) 每个版本必须补充“执行标准/时间范围/咨询或申诉渠道”中的至少一个；
 3) intensity 必须在 0~1；
 4) issues.evidence 必须能在原文中直接找到（不要写概括）。
@@ -273,6 +348,27 @@ def analyze(text: str, scenario: str, profile: dict):
         parsed, _ = safe_extract_json(content)
         if parsed is None:
             return local_fallback(text)
+
+        # Safety: if model doesn't follow naming/order, normalize to product order
+        rewrites = parsed.get("rewrites", []) or []
+        name_map = {"更清晰": None, "更安抚": None, "更可执行": None}
+        for rw in rewrites:
+            n = (rw.get("name") or "").strip()
+            if n in name_map and name_map[n] is None:
+                name_map[n] = rw
+
+        fixed = []
+        for n in ["更清晰", "更安抚", "更可执行"]:
+            if name_map[n] is not None:
+                fixed.append(name_map[n])
+        # If missing, fall back to first items
+        if len(fixed) < 3:
+            for rw in rewrites:
+                if rw not in fixed:
+                    fixed.append(rw)
+                if len(fixed) >= 3:
+                    break
+        parsed["rewrites"] = fixed[:3]
         return parsed
     except Exception:
         return local_fallback(text)
@@ -287,32 +383,23 @@ def clamp01(x):
 
 
 def highlight_text_html(raw_text: str, phrases: list[str]) -> str:
-    """
-    Reliable highlight using <mark>. Works even if Streamlit doesn't support ==.
-    Only highlights phrases that actually occur in text.
-    """
     if not raw_text:
         return ""
 
-    # Escape first (avoid HTML injection)
     safe = html.escape(raw_text)
 
-    # Normalize phrases: keep those that are short and appear in the raw text
     uniq = []
     for p in phrases or []:
         p = (p or "").strip()
         if not p:
             continue
-        # evidence 可能带引号/顿号等，先原样尝试
         if p not in raw_text:
             continue
         if p not in uniq:
             uniq.append(p)
 
-    # Longest first to avoid partial overlap
     for p in sorted(uniq, key=len, reverse=True):
         safe_p = html.escape(p)
-        # Replace escaped phrase in escaped text
         safe = safe.replace(safe_p, f"<mark class='hl'>{safe_p}</mark>")
 
     return f"<div class='card' style='line-height:1.8;font-size:15px;'>{safe}</div>"
@@ -334,12 +421,13 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
             unsafe_allow_html=True,
         )
     with k2:
+        label = ("低" if risk_level == "LOW" else ("中" if risk_level == "MEDIUM" else "高"))
         st.markdown(
             f"""
             <div class="card">
               <div class="kpi-label">风险等级</div>
               <div class="kpi-value2">{risk_level}</div>
-              <div class="muted" style="margin-top:8px;">{("低" if risk_level=="LOW" else ("中" if risk_level=="MEDIUM" else "高"))}风险</div>
+              <div class="muted" style="margin-top:8px;">{label}风险</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -374,11 +462,13 @@ def render_decision(text: str, rewrites: list):
             st.markdown(
                 f"""
                 <div class="card">
-                  <div style="font-weight:850;font-size:15px;margin-bottom:6px;">{html.escape(str(name))}</div>
-                  <div class="muted" style="margin-bottom:10px;">
-                    预测风险：<span style="font-weight:850;color:rgba(17,24,39,.92)">{html.escape(str(pr))}</span>
+                  <div class="card-head">
+                    <div class="card-title clamp2">{html.escape(str(name))}</div>
+                    <div class="pill">预测风险 {html.escape(str(pr))}</div>
                   </div>
-                  <div class="muted" style="font-size:13px;line-height:1.45;">{html.escape(str(why))}</div>
+                  <div class="muted clamp3" style="margin-top:10px; font-size:13px; line-height:1.45;">
+                    {html.escape(str(why))}
+                  </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -408,7 +498,7 @@ if "last_inputs" not in st.session_state:
 left, right = st.columns([3, 2], gap="large")
 
 with left:
-    st.markdown('<div class="section-h">✍️ 待发布文本</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-h">待发布文本</div>', unsafe_allow_html=True)
     text = st.text_area(
         " ",
         height=260,
@@ -418,7 +508,7 @@ with left:
     )
 
 with right:
-    st.markdown('<div class="section-h">🎯 场景与受众</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-h">场景与受众</div>', unsafe_allow_html=True)
 
     scenario = st.selectbox(
         "发布场景",
@@ -485,19 +575,31 @@ else:
     render_overview(risk_score, risk_level, summary)
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="section-h">✍️ 改写版本（对比）</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-h">改写版本</div>', unsafe_allow_html=True)
     render_decision(current_text, result.get("rewrites", []))
 
     # Deep dive
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     with st.expander("查看详细分析", expanded=False):
-        tab1, tab2, tab3 = st.tabs(["风险点", "学生情绪", "原文标注"])
+        tab1, tab2 = st.tabs(["风险点", "学生情绪"])
 
+        # ---- Risk tab: merge highlight + issue list ----
         with tab1:
             issues = result.get("issues", []) or []
             if not issues:
                 st.info("未识别到明显风险点。")
             else:
+                phrases = []
+                for it in issues:
+                    ev = (it.get("evidence") or "").strip()
+                    if ev:
+                        phrases.append(ev)
+
+                st.markdown("**原文标注**")
+                st.markdown(highlight_text_html(current_text, phrases), unsafe_allow_html=True)
+
+                st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+                st.markdown("**风险点列表**")
                 for i, it in enumerate(issues, start=1):
                     st.markdown(f"**{i}. {it.get('title','(未命名)')}**")
                     st.markdown(f"- 触发片段：{it.get('evidence','')}")
@@ -526,17 +628,6 @@ else:
                         unsafe_allow_html=True,
                     )
                     st.write("")
-
-        with tab3:
-            issues = result.get("issues", []) or []
-            phrases = []
-            for it in issues:
-                ev = (it.get("evidence") or "").strip()
-                if ev:
-                    phrases.append(ev)
-
-            st.markdown('<div class="section-h">原文标注</div>', unsafe_allow_html=True)
-            st.markdown(highlight_text_html(current_text, phrases), unsafe_allow_html=True)
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
