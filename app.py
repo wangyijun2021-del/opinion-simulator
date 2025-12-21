@@ -201,15 +201,18 @@ st.markdown(
         50%{ opacity:1; transform: translateY(-2px); }
       }
 
-      /* Secondary action button */
+      /* Secondary action button (emoji) — match "复制该版本" */
       div.stButton > button[kind="secondary"]{
         width: 100%;
         border-radius: 14px !important;
         padding: 10px 12px !important;
         font-weight: 900 !important;
-        border: 1px solid rgba(37,99,235,.22) !important;
-        background: rgba(37,99,235,.07) !important;
+        font-size: 15px !important;
+
+        border: 1px solid rgba(37,99,235,.25) !important;
+        background: rgba(37,99,235,.08) !important;
         color: rgba(37,99,235,1) !important;
+
         transition: transform .15s ease, filter .2s ease;
       }
       div.stButton > button[kind="secondary"]:hover{
