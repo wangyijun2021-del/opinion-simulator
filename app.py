@@ -2,274 +2,243 @@ import os
 import re
 import json
 import html
+import time
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 # =========================
 # Page config
 # =========================
 st.set_page_config(
-    page_title="清小知｜高校通知小助手",
+    page_title="清小知——高校通知模拟器",
     layout="wide",
 )
 
 # =========================
-# Styles (formal + premium + subtle motion)
+# Styles (cool + premium)
 # =========================
 st.markdown(
     """
     <style>
-      /* ✅ Streamlit 的实际背景容器不是 body，必须覆盖这些 */
-      .stApp,
-      [data-testid="stAppViewContainer"],
-      body{
+      /* Make background actually apply in Streamlit */
+      [data-testid="stAppViewContainer"]{
         background:
-          radial-gradient(1200px 600px at 18% 0%, rgba(59,130,246,.12), transparent 62%),
-          radial-gradient(900px 500px at 86% 12%, rgba(16,185,129,.10), transparent 58%),
-          linear-gradient(180deg, rgba(236,246,255,1) 0%, rgba(246,250,255,1) 55%, rgba(255,255,255,1) 100%) !important;
+          radial-gradient(1200px 700px at 20% 0%, rgba(59,130,246,.16), transparent 60%),
+          radial-gradient(900px 520px at 85% 10%, rgba(37,99,235,.12), transparent 55%),
+          linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(248,250,252,1) 55%, rgba(255,255,255,1) 100%);
       }
+      [data-testid="stHeader"]{ background: transparent; }
+      .block-container {padding-top: 1.2rem; padding-bottom: 2.0rem; max-width: 1120px;}
 
-      .block-container {padding-top: 1.8rem; padding-bottom: 2.2rem; max-width: 1120px;}
       #MainMenu {visibility: hidden;}
       footer {visibility: hidden;}
       header {visibility: hidden;}
 
       /* Header */
-      .hero{
+      .hero {
+        text-align:center;
+        padding: 8px 0 14px 0;
         position: relative;
-        margin: 0 0 1.2rem 0;
-        padding: 0.2rem 0 0.4rem 0;
-        text-align: center;
       }
-      .hero::before{
-        content:"";
-        position:absolute;
-        left:50%;
-        top:-18px;
-        transform:translateX(-50%);
-        width: 520px;
-        height: 140px;
-        background:
-          radial-gradient(220px 120px at 30% 40%, rgba(59,130,246,.16), transparent 65%),
-          radial-gradient(220px 120px at 70% 45%, rgba(99,102,241,.12), transparent 70%);
-        filter: blur(12px);
-        opacity: .95;
-        pointer-events:none;
-        z-index:0;
-      }
-
-      .brand-title{
-        position: relative;
-        z-index: 1;
-        font-size: 44px;
+      .hero-title{
+        font-size: 42px;
         font-weight: 900;
         letter-spacing: -0.03em;
-        line-height: 1.0;
-        display: inline-block;
-
-        background: linear-gradient(90deg,
-          rgba(17,24,39,1) 0%,
-          rgba(37,99,235,1) 30%,
-          rgba(79,70,229,1) 70%,
-          rgba(17,24,39,1) 100%);
-        background-size: 220% 100%;
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-
-        animation: titleFlow 8s ease-in-out infinite;
-        transform: translateY(0);
+        color: rgba(15, 23, 42, .95);
+        margin: 0;
+        animation: floatIn .7s ease-out both;
+        text-shadow: 0 10px 35px rgba(37,99,235,.18);
       }
-      @keyframes titleFlow{
-        0%{background-position: 0% 50%;}
-        50%{background-position: 100% 50%;}
-        100%{background-position: 0% 50%;}
-      }
-      .brand-title:hover{
-        filter: drop-shadow(0 18px 35px rgba(37,99,235,.18));
-        transform: translateY(-1px);
-        transition: 220ms ease;
-      }
-
-      .brand-subtitle{
-        position: relative;
-        z-index: 1;
-        margin-top: 0.6rem;
-        color: rgba(17,24,39,.62);
-        font-size: 14px;
-        line-height: 1.6;
-        display:inline-block;
-        padding: 8px 14px;
+      .hero-pill{
+        display:inline-flex;
+        align-items:center;
+        gap:10px;
+        padding: 10px 16px;
         border-radius: 999px;
-        border: 1px solid rgba(0,0,0,.06);
-        background: rgba(255,255,255,.72);
-        box-shadow: 0 10px 26px rgba(0,0,0,.06);
-        backdrop-filter: blur(6px);
+        border: 1px solid rgba(2,6,23,.06);
+        background: rgba(255,255,255,.75);
+        box-shadow: 0 10px 30px rgba(2,6,23,.06);
+        color: rgba(51,65,85,.90);
+        font-size: 14px;
+        margin-top: 10px;
+        animation: glow 3.2s ease-in-out infinite;
+      }
+      .hero-dot{
+        width:10px; height:10px; border-radius:999px;
+        background: rgba(37,99,235,.85);
+        box-shadow: 0 0 0 6px rgba(37,99,235,.12);
+      }
+      @keyframes floatIn{
+        from{ transform: translateY(8px); opacity: 0; }
+        to{ transform: translateY(0); opacity: 1; }
+      }
+      @keyframes glow{
+        0%,100% { box-shadow: 0 10px 30px rgba(2,6,23,.06); }
+        50% { box-shadow: 0 18px 40px rgba(37,99,235,.12); }
       }
 
-      /* Section heading */
+      /* Section title */
       .section-h{
-        font-size: 16px;
-        font-weight: 800;
-        margin: 0.2rem 0 0.8rem 0;
-        border-left: 3px solid rgba(37,99,235,.45);
-        padding-left: 10px;
+        font-size: 18px;
+        font-weight: 900;
+        margin: 0.4rem 0 1.0rem 0;
+        border-left: 4px solid rgba(37,99,235,.55);
+        padding-left: 12px;
+        color: rgba(15,23,42,.92);
       }
 
-      /* Cards */
+      /* Card */
       .card {
-        background: rgba(255,255,255,.90);
+        background: rgba(255,255,255,.88);
         border-radius: 18px;
         padding: 16px 18px;
-        box-shadow: 0 10px 30px rgba(0,0,0,.06);
-        border: 1px solid rgba(0,0,0,.04);
+        box-shadow: 0 12px 34px rgba(2,6,23,.07);
+        border: 1px solid rgba(2,6,23,.05);
       }
-      .kpi-label {color: rgba(17,24,39,.55); font-size: 12px; letter-spacing: .06em;}
-      .kpi-value {font-size: 34px; font-weight: 850; margin-top: 6px;}
-      .kpi-value2 {font-size: 22px; font-weight: 850; margin-top: 10px;}
-      .muted {color: rgba(17,24,39,.62);}
+      .muted {color: rgba(51,65,85,.70);}
       .mono {font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
 
-      .badge {
-        display:inline-flex; align-items:center;
-        padding: 5px 10px; border-radius: 999px; font-size: 12px;
-        border: 1px solid rgba(0,0,0,.08);
-        color: rgba(17,24,39,.85);
-        background: rgba(255,255,255,.74);
-        margin-right: 6px; margin-bottom: 6px;
-      }
-
-      .bar {height: 10px; border-radius: 999px; background: rgba(17,24,39,.08); overflow: hidden; margin-top: 10px;}
-      .bar > div {height: 100%; border-radius: 999px; background: rgba(37,99,235,.86);}
+      /* KPI */
+      .kpi-label {color: rgba(51,65,85,.60); font-size: 12px; letter-spacing: .06em;}
+      .kpi-value {font-size: 34px; font-weight: 900; margin-top: 6px; color: rgba(15,23,42,.92);}
+      .kpi-value2 {font-size: 22px; font-weight: 900; margin-top: 10px; color: rgba(15,23,42,.92);}
+      .bar {height: 10px; border-radius: 999px; background: rgba(15,23,42,.08); overflow: hidden; margin-top: 10px;}
+      .bar > div {height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(37,99,235,.95), rgba(59,130,246,.75));}
 
       /* Highlight */
       mark.hl {
-        background: rgba(245, 158, 11, 0.25);
+        background: rgba(59, 130, 246, 0.22);
         color: inherit;
         padding: 0 .18em;
         border-radius: .35em;
       }
 
-      /* Compact text */
-      .clamp3{
-        display:-webkit-box;
-        -webkit-line-clamp:3;
-        -webkit-box-orient:vertical;
-        overflow:hidden;
+      /* Tips */
+      .tip{
+        margin-top: 14px;
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(37,99,235,0.06);
+        border: 1px solid rgba(2,6,23,.05);
+        box-shadow: 0 12px 34px rgba(2,6,23,.05);
       }
-      .pill{
-        font-size:12px; padding:4px 10px; border-radius:999px;
-        border:1px solid rgba(0,0,0,.08);
-        background:rgba(255,255,255,.72);
-        color:rgba(17,24,39,.78);
-        white-space:nowrap;
+      .tip-title{ font-weight: 900; color: rgba(15,23,42,.90); margin-bottom: 6px; }
+      .tip-text{ color: rgba(51,65,85,.76); line-height: 1.6; white-space: pre-line; }
+
+      /* Blue tags */
+      .blue-tag{
+        display:inline-block;
+        padding:4px 10px;
+        border-radius:999px;
+        background:rgba(37,99,235,.12);
+        color:rgba(37,99,235,1);
+        font-size:12px;
+        margin-right:8px;
+        margin-bottom:6px;
+        border: 1px solid rgba(37,99,235,.18);
       }
 
+      /* Chat bubble */
+      .bubble{
+        margin-top:8px;
+        background:rgba(37,99,235,.06);
+        border: 1px solid rgba(37,99,235,.12);
+        border-radius:16px;
+        padding:10px 12px;
+        font-size:14px;
+        line-height:1.65;
+        color:rgba(15,23,42,.90);
+        position: relative;
+      }
+      .bubble:before{
+        content:"";
+        position:absolute;
+        left:14px;
+        top:-7px;
+        width:12px; height:12px;
+        background:rgba(37,99,235,.06);
+        border-left:1px solid rgba(37,99,235,.12);
+        border-top:1px solid rgba(37,99,235,.12);
+        transform: rotate(45deg);
+      }
+
+      /* Risk point list (compact) */
+      .rp-item{
+        padding: 12px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(2,6,23,.06);
+        background: rgba(255,255,255,.74);
+        margin-bottom: 10px;
+      }
+
+      /* Tabs: evenly distributed */
+      .stTabs [data-baseweb="tab-list"]{
+        justify-content: space-between;
+      }
+      .stTabs [data-baseweb="tab"]{
+        font-size: 15px;
+        font-weight: 800;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+
+      /* Primary button: cool + interactive */
+      div.stButton > button[kind="primary"]{
+        width: 100%;
+        border: 0 !important;
+        border-radius: 14px !important;
+        padding: 14px 16px !important;
+        font-weight: 900 !important;
+        background: linear-gradient(90deg, rgba(37,99,235,.96), rgba(59,130,246,.92)) !important;
+        box-shadow: 0 18px 44px rgba(37,99,235,.22) !important;
+        transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+      }
+      div.stButton > button[kind="primary"]:hover{
+        transform: translateY(-1px);
+        filter: brightness(1.02);
+        box-shadow: 0 22px 60px rgba(37,99,235,.28) !important;
+      }
+      div.stButton > button[kind="primary"]:active{
+        transform: translateY(0px) scale(.99);
+      }
+
+      /* Loading dots */
+      .loading{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: linear-gradient(90deg, rgba(37,99,235,.96), rgba(59,130,246,.92));
+        color: white;
+        font-weight: 900;
+        box-shadow: 0 18px 44px rgba(37,99,235,.22);
+        user-select:none;
+      }
+      .dots span{
+        display:inline-block;
+        width:6px; height:6px;
+        border-radius:999px;
+        background:white;
+        margin-left:5px;
+        opacity:.25;
+        animation: blink 1.1s infinite;
+      }
+      .dots span:nth-child(2){ animation-delay: .15s; }
+      .dots span:nth-child(3){ animation-delay: .3s; }
+      @keyframes blink{
+        0%,100%{ opacity:.25; transform: translateY(0); }
+        50%{ opacity:1; transform: translateY(-2px); }
+      }
+
+      /* Footnote */
       .footnote {
-        color: rgba(17,24,39,.48);
+        color: rgba(51,65,85,.55);
         font-size: 12px;
         margin-top: 18px;
         text-align:center;
-      }
-
-      /* Tip block */
-      .tip {
-        margin-top: 14px;
-        padding: 14px 16px;
-        border-radius: 16px;
-        border: 1px solid rgba(37,99,235,.10);
-        background:
-          linear-gradient(180deg, rgba(37,99,235,.08), rgba(99,102,241,.06));
-        box-shadow: 0 12px 30px rgba(0,0,0,.06);
-        position: relative;
-        overflow: hidden;
-      }
-      .tip::after{
-        content:"";
-        position:absolute;
-        top:-40%;
-        left:-30%;
-        width: 60%;
-        height: 180%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,.62), transparent);
-        transform: rotate(18deg);
-        animation: shimmer 5.8s ease-in-out infinite;
-        opacity: .65;
-        pointer-events:none;
-      }
-      @keyframes shimmer{
-        0%{transform: translateX(-40%) rotate(18deg);}
-        50%{transform: translateX(140%) rotate(18deg);}
-        100%{transform: translateX(-40%) rotate(18deg);}
-      }
-      .tip-h{
-        font-weight: 850;
-        font-size: 13px;
-        color: rgba(17,24,39,.88);
-        margin-bottom: 6px;
-      }
-      .tip-t{
-        color: rgba(17,24,39,.62);
-        font-size: 13px;
-        line-height: 1.65;
-        white-space: pre-line;
-      }
-
-      /* Primary button (cool + animated) */
-      div.stButton > button[kind="primary"]{
-        width: 100%;
-        border: 1px solid rgba(255,255,255,.18) !important;
-        background: linear-gradient(90deg, rgba(37,99,235,1), rgba(79,70,229,1), rgba(14,165,233,1)) !important;
-        background-size: 220% 100% !important;
-        color: #ffffff !important;
-        font-weight: 900 !important;
-        border-radius: 14px !important;
-        padding: 0.85rem 1.1rem !important;
-        box-shadow: 0 18px 40px rgba(37,99,235,.22) !important;
-        transform: translateY(0px);
-        transition: transform 160ms ease, box-shadow 200ms ease, filter 200ms ease;
-        animation: btnFlow 7.5s ease-in-out infinite, btnGlow 3.6s ease-in-out infinite;
-      }
-      @keyframes btnFlow{
-        0%{background-position: 0% 50%;}
-        50%{background-position: 100% 50%;}
-        100%{background-position: 0% 50%;}
-      }
-      @keyframes btnGlow{
-        0%,100%{box-shadow: 0 18px 40px rgba(37,99,235,.18);}
-        50%{box-shadow: 0 22px 52px rgba(79,70,229,.26);}
-      }
-      div.stButton > button[kind="primary"]:hover{
-        transform: translateY(-2px);
-        filter: brightness(1.03) saturate(1.05);
-        box-shadow: 0 26px 60px rgba(37,99,235,.26) !important;
-      }
-      div.stButton > button[kind="primary"]:active{
-        transform: translateY(1px) scale(0.99);
-        box-shadow: 0 14px 34px rgba(37,99,235,.18) !important;
-      }
-      div.stButton > button[kind="primary"] p{
-        font-size: 18px !important;
-        letter-spacing: .02em;
-      }
-
-      /* ✅ Loading state: disabled primary button shows animated dots */
-      div.stButton > button[kind="primary"][disabled]{
-        cursor: wait !important;
-        filter: saturate(0.98) brightness(0.98);
-      }
-      div.stButton > button[kind="primary"][disabled] p::after{
-        content: "...";
-        display: inline-block;
-        width: 18px;
-        overflow: hidden;
-        vertical-align: bottom;
-        margin-left: 8px;
-        animation: dots 1.2s steps(4,end) infinite;
-      }
-      @keyframes dots{
-        0%{width:0px;}
-        100%{width:18px;}
       }
     </style>
     """,
@@ -277,14 +246,15 @@ st.markdown(
 )
 
 # =========================
-# Header
+# Header (centered)
 # =========================
 st.markdown(
     """
     <div class="hero">
-      <div class="brand-title">清小知</div>
-      <div style="margin-top:10px;">
-        <div class="brand-subtitle">高校通知小助手｜让通知更容易被理解</div>
+      <div class="hero-title">清小知</div>
+      <div class="hero-pill">
+        <span class="hero-dot"></span>
+        <span>高校通知小助手｜让通知更容易被理解</span>
       </div>
     </div>
     """,
@@ -308,10 +278,21 @@ if not DEEPSEEK_API_KEY:
 # =========================
 # Helpers
 # =========================
+EMOJI_MAP = {
+    "焦虑": "😰",
+    "紧张": "😟",
+    "抵触": "😤",
+    "困惑": "😕",
+    "不安": "😣",
+    "担忧": "😧",
+    "生气": "😡",
+    "配合": "🙂",
+    "反感": "🙃",
+}
+
 def safe_extract_json(text: str):
     if not text:
         return None, "empty_response"
-
     cleaned = re.sub(r"```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
     cleaned = cleaned.replace("```", "").strip()
 
@@ -332,25 +313,17 @@ def safe_extract_json(text: str):
 
     return None, "no_json_object_found"
 
-
 def call_deepseek(system_prompt: str, user_prompt: str, model: str = "deepseek-chat"):
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
     payload = {
         "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
+        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
         "temperature": 0.3,
     }
     r = requests.post(API_URL, headers=headers, json=payload, timeout=90)
     r.raise_for_status()
     data = r.json()
     return data["choices"][0]["message"]["content"]
-
 
 def local_fallback(text: str):
     risky_words = ["严肃处理", "通报批评", "纪律处分", "一律", "从严", "不得", "立即", "清退", "追责", "强制", "处分", "严禁", "必须"]
@@ -363,16 +336,16 @@ def local_fallback(text: str):
         issues.append(
             {
                 "title": "措辞强硬 / 惩戒导向",
-                "evidence": hits[0] if hits else "",
+                "evidence": hits[0],
                 "why": "学生容易解读为高压或“结果已定”，引发抵触、吐槽与二次传播。",
                 "rewrite_tip": "补充依据与范围，明确流程与咨询渠道；用“提醒+规范+支持”替代单纯惩戒。",
             }
         )
 
     emotions = [
-        {"group": "普通学生", "sentiment": "紧张/被约束", "intensity": 0.55, "sample_comment": "能不能说清楚标准和范围？"},
-        {"group": "宿舍长/楼委", "sentiment": "配合但担心执行成本", "intensity": 0.45, "sample_comment": "希望给个可操作的清单。"},
-        {"group": "敏感群体", "sentiment": "警惕/抵触", "intensity": 0.65, "sample_comment": "别一刀切，给个申诉渠道。"},
+        {"group": "普通学生", "sentiment": "焦虑", "intensity": 0.55, "sample_comment": "能不能说清楚标准和范围？"},
+        {"group": "宿舍长/楼委", "sentiment": "担忧", "intensity": 0.45, "sample_comment": "希望给个可操作的清单。"},
+        {"group": "敏感群体", "sentiment": "抵触", "intensity": 0.65, "sample_comment": "别一刀切，给个申诉渠道。"},
     ]
 
     rewrites = [
@@ -389,7 +362,6 @@ def local_fallback(text: str):
         "student_emotions": emotions,
         "rewrites": rewrites,
     }
-
 
 def analyze(text: str, scenario: str, profile: dict):
     system_prompt = (
@@ -429,9 +401,9 @@ def analyze(text: str, scenario: str, profile: dict):
   "student_emotions": [
     {{
       "group": "学生群体名称",
-      "sentiment": "主要情绪",
+      "sentiment": "主要情绪（中文短词，如：焦虑/抵触/困惑/担忧/紧张）",
       "intensity": 0到1的小数,
-      "sample_comment": "一句典型评论（仿真口吻）"
+      "sample_comment": "一句典型评论（仿真口吻，口语化）"
     }}
   ],
   "rewrites": [
@@ -482,14 +454,12 @@ def analyze(text: str, scenario: str, profile: dict):
     except Exception:
         return local_fallback(text)
 
-
 def clamp01(x):
     try:
         x = float(x)
     except Exception:
         return 0.0
     return max(0.0, min(1.0, x))
-
 
 def highlight_text_html(raw_text: str, phrases: list[str]) -> str:
     if not raw_text:
@@ -510,8 +480,7 @@ def highlight_text_html(raw_text: str, phrases: list[str]) -> str:
         safe_p = html.escape(p)
         safe = safe.replace(safe_p, f"<mark class='hl'>{safe_p}</mark>")
 
-    return f"<div class='card' style='line-height:1.8;font-size:15px;'>{safe}</div>"
-
+    return f"<div class='card' style='line-height:1.85;font-size:15px;'>{safe}</div>"
 
 def render_overview(risk_score: int, risk_level: str, summary: str):
     pct = max(0, min(100, int(risk_score)))
@@ -545,7 +514,7 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
             f"""
             <div class="card">
               <div class="kpi-label">结论</div>
-              <div style="font-size:16px;font-weight:780;margin-top:10px;line-height:1.5;">
+              <div style="font-size:16px;font-weight:900;margin-top:10px;line-height:1.55;color:rgba(15,23,42,.92);">
                 {html.escape(summary)}
               </div>
             </div>
@@ -553,70 +522,49 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
             unsafe_allow_html=True,
         )
 
-
-def render_tip_block():
-    tip_text = (
-        "撰写通知时应尽量涵盖时间窗口 / 执行范围 / 可替代方案 / 咨询渠道。\n"
-        "信息越完整，越不容易被误读噢💙"
-    )
+def tip_block():
     st.markdown(
-        f"""
+        """
         <div class="tip">
-          <div class="tip-h">通知小贴士</div>
-          <div class="tip-t">{html.escape(tip_text)}</div>
+          <div class="tip-title">通知小贴士</div>
+          <div class="tip-text">撰写通知时应尽量涵盖时间窗口 / 执行范围 / 可替代方案 / 咨询渠道。<br>信息越完整，越不容易被误读噢💙</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-
-def render_rewrite_fulltext(rw: dict):
-    pr = rw.get("pred_risk_score", "-")
-    why = rw.get("why", "")
-    txt = rw.get("text", "")
-
-    st.markdown(
+def clipboard_copy_button(text: str, key: str):
+    safe = json.dumps(text)  # safe JS string
+    components.html(
         f"""
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-            <div style="font-weight:850; font-size:14px; line-height:1.25;">{html.escape(str(rw.get("name","")))}</div>
-            <div class="pill">预测风险 {html.escape(str(pr))}</div>
-          </div>
-          <div class="muted clamp3" style="margin-top:10px; font-size:13px; line-height:1.45;">
-            {html.escape(str(why))}
-          </div>
+        <div style="margin-top:10px;">
+          <button id="btn-{key}" style="
+            width:100%;
+            border:1px solid rgba(37,99,235,.25);
+            background: rgba(37,99,235,.08);
+            color: rgba(37,99,235,1);
+            padding:10px 12px;
+            border-radius:12px;
+            font-weight:900;
+            cursor:pointer;
+          ">复制该版本</button>
         </div>
+        <script>
+          const btn = document.getElementById("btn-{key}");
+          btn.addEventListener("click", async () => {{
+            try {{
+              await navigator.clipboard.writeText({safe});
+              btn.innerText = "已复制 ✓";
+              setTimeout(() => btn.innerText = "复制该版本", 1200);
+            }} catch (e) {{
+              btn.innerText = "复制失败（请手动全选复制）";
+              setTimeout(() => btn.innerText = "复制该版本", 1600);
+            }}
+          }});
+        </script>
         """,
-        unsafe_allow_html=True,
+        height=52,
     )
-
-    safe_text = html.escape(str(txt)).replace("\n", "<br>")
-    st.markdown(
-        f"""
-        <div class="card" style="margin-top:12px; font-size:15px; line-height:1.78;">
-          {safe_text}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def extract_phrases_from_result(res: dict) -> list[str]:
-    phrases = []
-    if not res:
-        return phrases
-    for it in (res.get("issues", []) or []):
-        ev = (it.get("evidence") or "").strip()
-        if ev:
-            phrases.append(ev)
-    seen = set()
-    out = []
-    for p in phrases:
-        if p not in seen:
-            out.append(p)
-            seen.add(p)
-    return out
-
 
 # =========================
 # Session state
@@ -625,8 +573,8 @@ if "result" not in st.session_state:
     st.session_state.result = None
 if "last_inputs" not in st.session_state:
     st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}}
-if "run_pending" not in st.session_state:
-    st.session_state.run_pending = False
+if "is_loading" not in st.session_state:
+    st.session_state.is_loading = False
 
 # =========================
 # Input layout
@@ -642,20 +590,7 @@ with left:
         label_visibility="collapsed",
         value=st.session_state.last_inputs.get("text", ""),
     )
-
-    # ✅ 预测后：直接在这里显示风险高亮（不再放折叠里）
-    if st.session_state.result and st.session_state.last_inputs.get("text", "").strip():
-        phrases = extract_phrases_from_result(st.session_state.result)
-        if phrases:
-            st.markdown('<div class="section-h" style="margin-top:14px;">原文（高亮标注）</div>', unsafe_allow_html=True)
-            st.markdown(
-                highlight_text_html(st.session_state.last_inputs.get("text", ""), phrases),
-                unsafe_allow_html=True,
-            )
-        else:
-            render_tip_block()
-    else:
-        render_tip_block()
+    tip_block()
 
 with right:
     st.markdown('<div class="section-h">场景与受众</div>', unsafe_allow_html=True)
@@ -685,44 +620,43 @@ with right:
 
     custom = st.text_input("画像补充（可选）", placeholder="例如：近期对宿舍检查较敏感，担心被通报。")
 
-    profile = {
-        "grade": grade,
-        "role": role,
-        "gender": gender,
-        "sensitivity": sensitivity,
-        "custom": custom,
-    }
+    profile = {"grade": grade, "role": role, "gender": gender, "sensitivity": sensitivity, "custom": custom}
 
-    # ✅ Loading-state button
-    btn_slot = st.empty()
+    btn_area = st.empty()
 
-    if st.session_state.run_pending:
-        btn_slot.button("预测中", type="primary", use_container_width=True, disabled=True)
+# =========================
+# Run (loading-state button)
+# =========================
+clicked = False
+if st.session_state.is_loading:
+    btn_area.markdown(
+        "<div class='loading'>预测中… <span class='dots'><span></span><span></span><span></span></span></div>",
+        unsafe_allow_html=True,
+    )
+else:
+    clicked = btn_area.button("发布预测", type="primary", use_container_width=True)
+
+if clicked:
+    if not text.strip():
+        st.warning("请先输入一段文本。")
     else:
-        clicked = btn_slot.button("发布预测", type="primary", use_container_width=True)
-        if clicked:
-            if not text.strip():
-                st.warning("请先输入一段文本。")
-            else:
-                st.session_state.run_pending = True
-                st.session_state.last_inputs = {"text": text, "scenario": scenario, "profile": profile}
-                st.rerun()
+        st.session_state.is_loading = True
+        btn_area.markdown(
+            "<div class='loading'>预测中… <span class='dots'><span></span><span></span><span></span></span></div>",
+            unsafe_allow_html=True,
+        )
+        # 让“加载态”先渲染出来（尽量）
+        time.sleep(0.05)
+
+        with st.spinner("正在生成预测…"):
+            result = analyze(text, scenario, profile)
+
+        st.session_state.result = result
+        st.session_state.last_inputs = {"text": text, "scenario": scenario, "profile": profile}
+        st.session_state.is_loading = False
+        st.rerun()
 
 st.divider()
-
-# =========================
-# Run pending job (2nd pass)
-# =========================
-if st.session_state.run_pending:
-    _text = st.session_state.last_inputs.get("text", "")
-    _scenario = st.session_state.last_inputs.get("scenario", "宿舍与安全管理通知")
-    _profile = st.session_state.last_inputs.get("profile", {})
-
-    res = analyze(_text, _scenario, _profile)
-    st.session_state.result = res
-
-    st.session_state.run_pending = False
-    st.rerun()
 
 result = st.session_state.result
 current_text = st.session_state.last_inputs.get("text", "")
@@ -735,53 +669,73 @@ if not result:
 else:
     render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
 
-    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+    # ---- Highlight shown directly under input area (requested) ----
+    issues = result.get("issues", []) or []
+    phrases = [(it.get("evidence") or "").strip() for it in issues if (it.get("evidence") or "").strip()]
+    if current_text.strip() and phrases:
+        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+        st.markdown('<div class="section-h">原文标注</div>', unsafe_allow_html=True)
+        st.markdown(highlight_text_html(current_text, phrases), unsafe_allow_html=True)
 
-    # ✅ 2) 不折叠：并列板块；✅ 3) 放在改写建议之前；✅ 改名为「情绪预测」
+    st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
+
+    # ---- Emotion Prediction (NOT collapsed, two columns) ----
     st.markdown('<div class="section-h">情绪预测</div>', unsafe_allow_html=True)
-    cL, cR = st.columns([1.15, 1.0], gap="large")
 
-    with cL:
+    risk_col, emo_col = st.columns([1.1, 1], gap="large")
+
+    with risk_col:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.markdown("**风险点**")
-        issues = result.get("issues", []) or []
+
         if not issues:
             st.info("未识别到明显风险点。")
         else:
-            for i, it in enumerate(issues, start=1):
-                st.markdown(f"**{i}. {it.get('title','(未命名)')}**")
-                st.markdown(f"- 触发片段：{it.get('evidence','')}")
-                st.markdown(f"- 原因：{it.get('why','')}")
-                st.markdown(f"- 建议：{it.get('rewrite_tip','')}")
-                if i != len(issues):
-                    st.markdown("---")
+            options = [f"{i+1}. {it.get('title','(未命名)')}" for i, it in enumerate(issues)]
+            selected = st.radio(" ", options=options, label_visibility="collapsed")
+            idx = int(selected.split(".")[0]) - 1
+            it = issues[idx]
+
+            st.markdown("<div class='rp-item'>", unsafe_allow_html=True)
+            st.markdown(f"**触发片段**：{it.get('evidence','')}")
+            st.markdown(f"**原因**：{it.get('why','')}")
+            st.markdown(f"**建议**：{it.get('rewrite_tip','')}")
+            st.markdown("</div>", unsafe_allow_html=True)
+
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with cR:
+    with emo_col:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.markdown("**学生情绪**")
+
         emos = result.get("student_emotions", []) or []
         if not emos:
             st.info("未生成情绪画像。")
         else:
             for e in emos:
+                emo = (e.get("sentiment") or "").strip()
+                emoji = EMOJI_MAP.get(emo, "💭")
                 intensity = clamp01(e.get("intensity", 0))
+                group = e.get("group", "群体")
+                comment = e.get("sample_comment", "")
+
                 st.markdown(
                     f"""
-                    <div style="margin-top:10px;">
-                      <span class='badge'>{html.escape(str(e.get('group','群体')))}</span>
-                      <span class='badge'>情绪：{html.escape(str(e.get('sentiment','')))}</span>
-                      <span class='badge'>强度：{intensity:.2f}</span>
-                      <div style='margin-top:8px;' class='mono'>“{html.escape(str(e.get('sample_comment','')))}”</div>
+                    <div style="margin-bottom:14px;">
+                      <span class="blue-tag">{html.escape(str(group))}</span>
+                      <span class="blue-tag">情绪：{html.escape(str(emo))} {emoji}</span>
+                      <span class="blue-tag">强度：{intensity:.2f}</span>
+                      <div class="bubble">{html.escape(str(comment))}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
+
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
-    # ---- Rewrite area ----
+    # ---- Rewrite suggestions ----
     st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
 
     rewrites = result.get("rewrites", []) or []
@@ -791,11 +745,41 @@ else:
 
     name_to_rw = {(rw.get("name") or "").strip(): rw for rw in rewrites}
     tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
+
     for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
         rw = name_to_rw.get(tname, {"name": tname, "pred_risk_score": "-", "text": "", "why": ""})
         rw["name"] = tname
+
         with tab:
-            render_rewrite_fulltext(rw)
+            pr = rw.get("pred_risk_score", "-")
+            why = rw.get("why", "")
+            st.markdown(
+                f"""
+                <div class="card">
+                  <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+                    <div style="font-weight:900; font-size:15px; line-height:1.25;">{html.escape(tname)}</div>
+                    <span class="blue-tag">预测风险 {html.escape(str(pr))}</span>
+                  </div>
+                  <div class="muted" style="margin-top:10px; font-size:13px; line-height:1.55;">
+                    {html.escape(str(why))}
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            txt = rw.get("text", "")
+            safe_text = html.escape(str(txt)).replace("\n", "<br>")
+            st.markdown(
+                f"""
+                <div class="card" style="margin-top:12px; font-size:15px; line-height:1.82;">
+                  {safe_text}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            clipboard_copy_button(txt, key=f"{tname}")
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
