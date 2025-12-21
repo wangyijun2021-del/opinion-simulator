@@ -14,27 +14,43 @@ st.set_page_config(
 )
 
 # =========================
-# Styles (formal + premium)
+# Styles (formal + premium) + Color + Motion (no logic change)
 # =========================
 st.markdown(
     """
     <style>
+      /* ---------- Page background (subtle animated gradient) ---------- */
       body{
         background:
-          radial-gradient(1200px 600px at 15% 0%, rgba(59,130,246,.08), transparent 60%),
-          radial-gradient(900px 500px at 85% 10%, rgba(16,185,129,.06), transparent 55%),
+          radial-gradient(1200px 600px at 15% 0%, rgba(59,130,246,.10), transparent 60%),
+          radial-gradient(900px 500px at 85% 10%, rgba(16,185,129,.08), transparent 55%),
+          radial-gradient(800px 520px at 60% 90%, rgba(245,158,11,.08), transparent 60%),
           #ffffff;
+        animation: bgShift 14s ease-in-out infinite alternate;
       }
+      @keyframes bgShift{
+        0%{
+          filter: hue-rotate(0deg);
+          background-position: 0% 0%;
+        }
+        100%{
+          filter: hue-rotate(8deg);
+          background-position: 100% 100%;
+        }
+      }
+
       .block-container {padding-top: 2.0rem; padding-bottom: 2.0rem; max-width: 1120px;}
       #MainMenu {visibility: hidden;}
       footer {visibility: hidden;}
       header {visibility: hidden;}
 
+      /* ---------- Header typography ---------- */
       .title {
         font-size: 34px;
         font-weight: 850;
         letter-spacing: -0.02em;
         margin-bottom: 0.25rem;
+        position: relative;
       }
       .subtitle {
         color: rgba(17,24,39,.62);
@@ -43,21 +59,31 @@ st.markdown(
         line-height: 1.6;
       }
 
+      /* ---------- Section header ---------- */
       .section-h{
         font-size: 16px;
         font-weight: 800;
         margin: 0.2rem 0 0.8rem 0;
-        border-left: 3px solid rgba(59,130,246,.45);
+        border-left: 3px solid rgba(59,130,246,.55);
         padding-left: 10px;
       }
 
+      /* ---------- Cards (hover + glass) ---------- */
       .card {
-        background: rgba(255,255,255,.90);
+        background: rgba(255,255,255,.92);
         border-radius: 18px;
         padding: 16px 18px;
         box-shadow: 0 10px 30px rgba(0,0,0,.06);
         border: 1px solid rgba(0,0,0,.04);
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+        will-change: transform;
       }
+      .card:hover{
+        transform: translateY(-2px);
+        box-shadow: 0 16px 40px rgba(0,0,0,.09);
+        border-color: rgba(59,130,246,.18);
+      }
+
       .kpi-label {color: rgba(17,24,39,.55); font-size: 12px; letter-spacing: .06em;}
       .kpi-value {font-size: 34px; font-weight: 850; margin-top: 6px;}
       .kpi-value2 {font-size: 22px; font-weight: 850; margin-top: 10px;}
@@ -69,22 +95,40 @@ st.markdown(
         padding: 5px 10px; border-radius: 999px; font-size: 12px;
         border: 1px solid rgba(0,0,0,.08);
         color: rgba(17,24,39,.85);
-        background: rgba(255,255,255,.74);
+        background: rgba(255,255,255,.78);
         margin-right: 6px; margin-bottom: 6px;
+        transition: transform .18s ease, border-color .18s ease;
+      }
+      .badge:hover{ transform: translateY(-1px); border-color: rgba(16,185,129,.18); }
+
+      /* ---------- Progress bar (animated fill) ---------- */
+      .bar {height: 10px; border-radius: 999px; background: rgba(17,24,39,.08); overflow: hidden; margin-top: 10px;}
+      .bar > div {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(59,130,246,.95), rgba(16,185,129,.85));
+        animation: fillGrow .9s ease-out both;
+        transform-origin: left;
+      }
+      @keyframes fillGrow{
+        from { transform: scaleX(0.2); filter: blur(.2px); }
+        to   { transform: scaleX(1);   filter: blur(0); }
       }
 
-      .bar {height: 10px; border-radius: 999px; background: rgba(17,24,39,.08); overflow: hidden; margin-top: 10px;}
-      .bar > div {height: 100%; border-radius: 999px; background: rgba(59,130,246,.86);}
-
-      /* Highlight */
+      /* ---------- Highlight ---------- */
       mark.hl {
         background: rgba(245, 158, 11, 0.25);
         color: inherit;
         padding: 0 .18em;
         border-radius: .35em;
+        box-shadow: inset 0 0 0 1px rgba(245,158,11,.10);
+        transition: background .18s ease;
+      }
+      mark.hl:hover{
+        background: rgba(245, 158, 11, 0.32);
       }
 
-      /* Compact text */
+      /* ---------- Compact text ---------- */
       .clamp2{
         display:-webkit-box;
         -webkit-line-clamp:2;
@@ -101,7 +145,7 @@ st.markdown(
       .pill{
         font-size:12px; padding:4px 10px; border-radius:999px;
         border:1px solid rgba(0,0,0,.08);
-        background:rgba(255,255,255,.72);
+        background:rgba(255,255,255,.78);
         color:rgba(17,24,39,.78);
         white-space:nowrap;
       }
@@ -112,21 +156,82 @@ st.markdown(
         margin-top: 18px;
       }
 
-      /* Illustration container */
+      /* ---------- Illustration container (animated SVG strokes) ---------- */
       .illu {
         margin-top: 14px;
         padding: 16px;
         border-radius: 16px;
-        background: rgba(59,130,246,0.04);
+        background:
+          radial-gradient(600px 120px at 20% 0%, rgba(59,130,246,.10), transparent 60%),
+          rgba(59,130,246,0.04);
         border: 1px solid rgba(0,0,0,.04);
         display: flex;
         align-items: center;
         gap: 16px;
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      }
+      .illu:hover{
+        transform: translateY(-2px);
+        box-shadow: 0 16px 40px rgba(0,0,0,.06);
+        border-color: rgba(59,130,246,.14);
       }
       .illu-text {
         color: rgba(17,24,39,.55);
         font-size: 13px;
         line-height: 1.55;
+      }
+      .illu svg path, .illu svg circle{
+        stroke-dasharray: 800;
+        stroke-dashoffset: 800;
+        animation: drawLine 1.1s ease-out forwards;
+      }
+      .illu svg circle{
+        stroke-dasharray: 40;
+        stroke-dashoffset: 40;
+      }
+      @keyframes drawLine{
+        to{ stroke-dashoffset: 0; }
+      }
+
+      /* ---------- Streamlit widgets polish ---------- */
+      /* Primary button: subtle pulse highlight */
+      div.stButton > button[kind="primary"]{
+        border-radius: 14px !important;
+        padding: 0.75rem 1rem !important;
+        background: linear-gradient(90deg, rgba(239,68,68,.92), rgba(245,158,11,.80)) !important;
+        border: 1px solid rgba(0,0,0,.06) !important;
+        box-shadow: 0 14px 30px rgba(239,68,68,.18) !important;
+        transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      div.stButton > button[kind="primary"]::after{
+        content:"";
+        position:absolute; inset:-40% -60%;
+        background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
+        transform: translateX(-60%) rotate(12deg);
+        animation: shine 2.8s ease-in-out infinite;
+      }
+      @keyframes shine{
+        0%{ transform: translateX(-60%) rotate(12deg); opacity: 0; }
+        25%{ opacity: .9; }
+        60%{ opacity: .6; }
+        100%{ transform: translateX(80%) rotate(12deg); opacity: 0; }
+      }
+      div.stButton > button[kind="primary"]:hover{
+        transform: translateY(-1px);
+        filter: saturate(1.05);
+        box-shadow: 0 18px 38px rgba(239,68,68,.22) !important;
+      }
+
+      /* Text area / inputs: softer corners */
+      textarea, input{
+        border-radius: 14px !important;
+      }
+
+      /* Tabs: make it look cleaner */
+      button[data-baseweb="tab"]{
+        font-weight: 750 !important;
       }
     </style>
     """,
@@ -428,7 +533,7 @@ def render_student_illustration():
     st.markdown(
         """
         <div class="illu">
-          <svg width="120" height="86" viewBox="0 0 240 172" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:.70;">
+          <svg width="120" height="86" viewBox="0 0 240 172" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:.75;">
             <!-- ground -->
             <path d="M18 146C52 132 88 126 120 126C152 126 188 132 222 146" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
             <!-- simple building -->
@@ -510,7 +615,7 @@ with left:
         value=st.session_state.last_inputs.get("text", ""),
     )
 
-    # 👇 Add illustration to fill empty area (requested)
+    # illustration (same as before, now animated via CSS)
     render_student_illustration()
 
 with right:
@@ -578,7 +683,7 @@ else:
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    # ---- Rewrite area: show full text directly (requested) ----
+    # ---- Rewrite area: show full text directly ----
     st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
 
     rewrites = result.get("rewrites", []) or []
@@ -590,7 +695,7 @@ else:
     tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
     for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
         rw = name_to_rw.get(tname, {"name": tname, "pred_risk_score": "-", "text": "", "why": ""})
-        rw["name"] = tname  # hard enforce tab name
+        rw["name"] = tname
         with tab:
             render_rewrite_fulltext(rw)
 
