@@ -114,7 +114,7 @@ st.markdown(
         border-radius: .35em;
       }
 
-      /* Tips */
+      /* === 你要改的点：通知小贴士字号更小 === */
       .tip{
         margin-top: 14px;
         padding: 16px;
@@ -123,8 +123,18 @@ st.markdown(
         border: 1px solid rgba(2,6,23,.05);
         box-shadow: 0 12px 34px rgba(2,6,23,.05);
       }
-      .tip-title{ font-weight: 900; color: rgba(15,23,42,.90); margin-bottom: 6px; }
-      .tip-text{ color: rgba(51,65,85,.76); line-height: 1.6; white-space: pre-line; }
+      .tip-title{
+        font-weight: 900;
+        color: rgba(15,23,42,.90);
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+      .tip-text{
+        color: rgba(51,65,85,.76);
+        line-height: 1.6;
+        white-space: pre-line;
+        font-size: 12.5px;
+      }
 
       /* Blue tags */
       .blue-tag{
@@ -140,30 +150,30 @@ st.markdown(
       }
 
       /* Chat bubble (single white bubble, not stitched) */
-.bubble{
-  margin-top:10px;
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(37,99,235,.14);
-  border-radius: 18px;
-  padding: 12px 14px;
-  font-size: 14px;
-  line-height: 1.7;
-  color: rgba(15,23,42,.92);
-  box-shadow: 0 12px 28px rgba(2,6,23,.06);
-  position: relative;
-}
-.bubble:before{
-  content:"";
-  position:absolute;
-  left:18px;
-  top:-8px;
-  width:14px;
-  height:14px;
-  background: rgba(255,255,255,.92);
-  border-left: 1px solid rgba(37,99,235,.14);
-  border-top: 1px solid rgba(37,99,235,.14);
-  transform: rotate(45deg);
-}
+      .bubble{
+        margin-top:10px;
+        background: rgba(255,255,255,.92);
+        border: 1px solid rgba(37,99,235,.14);
+        border-radius: 18px;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.7;
+        color: rgba(15,23,42,.92);
+        box-shadow: 0 12px 28px rgba(2,6,23,.06);
+        position: relative;
+      }
+      .bubble:before{
+        content:"";
+        position:absolute;
+        left:18px;
+        top:-8px;
+        width:14px;
+        height:14px;
+        background: rgba(255,255,255,.92);
+        border-left: 1px solid rgba(37,99,235,.14);
+        border-top: 1px solid rgba(37,99,235,.14);
+        transform: rotate(45deg);
+      }
 
       /* Risk point list (compact) */
       .rp-item{
@@ -174,15 +184,21 @@ st.markdown(
         margin-bottom: 10px;
       }
 
-      /* Tabs: evenly distributed */
+      /* === 你要改的点：改写通知排版更像“可发布” === */
+      .notice{
+        font-size: 15px;
+        line-height: 1.9;
+        letter-spacing: .01em;
+      }
+
+      /* === 你要改的点：tabs 更居中、两侧不贴边、字体更粗 === */
       .stTabs [data-baseweb="tab-list"]{
-        justify-content: space-between;
+        justify-content: space-evenly;
+        padding: 0 10%;
       }
       .stTabs [data-baseweb="tab"]{
         font-size: 15px;
-        font-weight: 800;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
+        font-weight: 900;
       }
 
       /* Primary button: cool + interactive */
@@ -424,7 +440,6 @@ def analyze(text: str, scenario: str, profile: dict):
 3) intensity 必须在 0~1；
 4) issues.evidence 必须能在原文中直接找到（不要写概括、不要写同义改写）。
 """
-
     try:
         content = call_deepseek(system_prompt, user_prompt)
         parsed, _ = safe_extract_json(content)
@@ -524,12 +539,55 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
             unsafe_allow_html=True,
         )
 
+# === 你要改的点：通知小贴士（文案你已经满意，我保留） ===
 def tip_block():
     st.markdown(
         """
         <div class="tip">
           <div class="tip-title">通知小贴士</div>
           <div class="tip-text">撰写通知时应尽量涵盖时间窗口 / 执行范围 / 可替代方案 / 咨询渠道。<br>信息越完整，越不容易被误读噢💙</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# === 你要改的点：改写通知排版（自动断句换行） ===
+def prettify_notice_text(raw: str) -> str:
+    if not raw:
+        return ""
+    t = raw.strip()
+    # 适度断句（避免太碎）
+    t = t.replace("；", "；\n")
+    t = t.replace("。", "。\n")
+    t = t.replace("！", "！\n")
+    t = t.replace("？", "？\n")
+    # 减少多余空行
+    t = re.sub(r"\n{3,}", "\n\n", t)
+    return t.strip()
+
+# === 你要改的点：通知 emoji（可选，默认关闭） ===
+def add_notice_emojis(raw: str) -> str:
+    if not raw:
+        return ""
+    t = raw
+    rules = [
+        (r"(时间|今晚|明晚|本周|周[一二三四五六日天]|(\d{1,2}:\d{2})|(\d{1,2}点))", "🕒\\1"),
+        (r"(地点|宿舍|楼|教室|会议室|操场|公寓)", "📍\\1"),
+        (r"(注意|提醒|请务必|请同学|温馨提示)", "💙\\1"),
+        (r"(咨询|联系|电话|微信|群|反馈|登记)", "☎️\\1"),
+        (r"(感谢|谢谢|辛苦了)", "🙏\\1"),
+        (r"(安全|风险|隐患|检查|抽查)", "🛡️\\1"),
+    ]
+    for pat, rep in rules:
+        t = re.sub(pat, rep, t, count=1)
+    return t
+
+def render_notice_block(text: str):
+    safe = html.escape(text).replace("\n", "<br>")
+    st.markdown(
+        f"""
+        <div class="card notice">
+          {safe}
         </div>
         """,
         unsafe_allow_html=True,
@@ -574,7 +632,7 @@ def clipboard_copy_button(text: str, key: str):
 if "result" not in st.session_state:
     st.session_state.result = None
 if "last_inputs" not in st.session_state:
-    st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}}
+    st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}, "use_emoji": False}
 if "is_loading" not in st.session_state:
     st.session_state.is_loading = False
 
@@ -597,6 +655,8 @@ with left:
 with right:
     st.markdown('<div class="section-h">场景与受众</div>', unsafe_allow_html=True)
 
+    # === 你要改的点：发布场景标题也加粗同级 ===
+    st.markdown("**发布场景**")
     scenario = st.selectbox(
         "发布场景",
         [
@@ -609,6 +669,7 @@ with right:
             "其他（通用高校公告）",
         ],
         index=0,
+        label_visibility="collapsed",
     )
 
     st.markdown("**受众画像**")
@@ -621,6 +682,9 @@ with right:
         sensitivity = st.selectbox("情绪敏感度", ["低", "中", "高"], index=1)
 
     custom = st.text_input("画像补充（可选）", placeholder="例如：近期对宿舍检查较敏感，担心被通报。")
+
+    # === 你要改的点：通知加emoji可选项（默认关闭） ===
+    use_emoji = st.toggle("通知加emoji（可选）", value=st.session_state.last_inputs.get("use_emoji", False))
 
     profile = {"grade": grade, "role": role, "gender": gender, "sensitivity": sensitivity, "custom": custom}
 
@@ -636,7 +700,8 @@ if st.session_state.is_loading:
         unsafe_allow_html=True,
     )
 else:
-    clicked = btn_area.button("发布预测", type="primary", use_container_width=True)
+    # === 你要改的点：按钮名字 ===
+    clicked = btn_area.button("一键发布预测", type="primary", use_container_width=True)
 
 if clicked:
     if not text.strip():
@@ -647,14 +712,13 @@ if clicked:
             "<div class='loading'>预测中… <span class='dots'><span></span><span></span><span></span></span></div>",
             unsafe_allow_html=True,
         )
-        # 让“加载态”先渲染出来（尽量）
         time.sleep(0.05)
 
         with st.spinner("正在生成预测…"):
             result = analyze(text, scenario, profile)
 
         st.session_state.result = result
-        st.session_state.last_inputs = {"text": text, "scenario": scenario, "profile": profile}
+        st.session_state.last_inputs = {"text": text, "scenario": scenario, "profile": profile, "use_emoji": use_emoji}
         st.session_state.is_loading = False
         st.rerun()
 
@@ -662,16 +726,17 @@ st.divider()
 
 result = st.session_state.result
 current_text = st.session_state.last_inputs.get("text", "")
+use_emoji = st.session_state.last_inputs.get("use_emoji", False)
 
 # =========================
 # Output
 # =========================
 if not result:
-    st.info("请输入文本并点击「发布预测」。")
+    st.info("请输入文本并点击「一键发布预测」。")
 else:
     render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
 
-    # ---- Highlight shown directly ----
+    # ---- Highlight shown directly (requested) ----
     issues = result.get("issues", []) or []
     phrases = [(it.get("evidence") or "").strip() for it in issues if (it.get("evidence") or "").strip()]
     if current_text.strip() and phrases:
@@ -694,14 +759,14 @@ else:
         else:
             options = [f"{i+1}. {it.get('title','(未命名)')}" for i, it in enumerate(issues)]
             selected = st.radio(" ", options=options, label_visibility="collapsed", key="risk_pick")
-
             idx = int(selected.split(".")[0]) - 1
             it = issues[idx]
 
+            # === 你要改的点：触发片段改成蓝色 ===
             st.markdown(
                 f"""
                 <div class='rp-item'>
-                  <div style="font-weight:900; margin-bottom:8px; color:rgba(15,23,42,.92);">
+                  <div style="font-weight:900; margin-bottom:8px; color: rgba(37,99,235,1);">
                     触发片段：{html.escape(str(it.get('evidence','')))}
                   </div>
                   <div style="margin-top:6px; color:rgba(15,23,42,.88); line-height:1.75;">
@@ -741,10 +806,9 @@ else:
                     unsafe_allow_html=True,
                 )
 
-    # ✅ 关键：到这里两列就结束了，下面在“列外面”写改写建议
     st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
-    # ---- Rewrite suggestions (FULL WIDTH) ----
+    # ---- Rewrite suggestions ----
     st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
 
     rewrites = result.get("rewrites", []) or []
@@ -762,11 +826,12 @@ else:
         with tab:
             pr = rw.get("pred_risk_score", "-")
             why = rw.get("why", "")
+
             st.markdown(
                 f"""
                 <div class="card">
                   <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-                    <div style="font-weight:900; font-size:15px; line-height:1.25;">{html.escape(tname)}</div>
+                    <div style="font-weight:900; font-size:16px; line-height:1.25;">{html.escape(tname)}</div>
                     <span class="blue-tag">预测风险 {html.escape(str(pr))}</span>
                   </div>
                   <div class="muted" style="margin-top:10px; font-size:13px; line-height:1.55;">
@@ -777,21 +842,16 @@ else:
                 unsafe_allow_html=True,
             )
 
+            # === 你要改的点：改写文本更清晰排版 + emoji 可选 ===
             txt = rw.get("text", "")
-            safe_text = html.escape(str(txt)).replace("\n", "<br>")
-            st.markdown(
-                f"""
-                <div class="card" style="margin-top:12px; font-size:15px; line-height:1.82;">
-                  {safe_text}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            txt = prettify_notice_text(txt)
+            if use_emoji:
+                txt = add_notice_emojis(txt)
 
+            render_notice_block(txt)
             clipboard_copy_button(txt, key=f"{tname}")
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
     unsafe_allow_html=True,
 )
- 
