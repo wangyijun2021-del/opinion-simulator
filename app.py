@@ -21,9 +21,9 @@ st.markdown(
     <style>
       body{
         background:
-          radial-gradient(1200px 600px at 18% 0%, rgba(59,130,246,.08), transparent 60%),
-          radial-gradient(900px 500px at 86% 12%, rgba(16,185,129,.06), transparent 55%),
-          #ffffff;
+          radial-gradient(1200px 600px at 18% 0%, rgba(59,130,246,.10), transparent 62%),
+          radial-gradient(900px 500px at 86% 12%, rgba(16,185,129,.08), transparent 58%),
+          linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(248,251,255,1) 55%, rgba(255,255,255,1) 100%);
       }
       .block-container {padding-top: 1.8rem; padding-bottom: 2.2rem; max-width: 1120px;}
       #MainMenu {visibility: hidden;}
@@ -46,10 +46,10 @@ st.markdown(
         width: 520px;
         height: 140px;
         background:
-          radial-gradient(220px 120px at 30% 40%, rgba(59,130,246,.10), transparent 65%),
-          radial-gradient(220px 120px at 70% 45%, rgba(16,185,129,.08), transparent 70%);
-        filter: blur(10px);
-        opacity: .9;
+          radial-gradient(220px 120px at 30% 40%, rgba(59,130,246,.14), transparent 65%),
+          radial-gradient(220px 120px at 70% 45%, rgba(99,102,241,.10), transparent 70%);
+        filter: blur(12px);
+        opacity: .95;
         pointer-events:none;
         z-index:0;
       }
@@ -65,8 +65,8 @@ st.markdown(
 
         background: linear-gradient(90deg,
           rgba(17,24,39,1) 0%,
-          rgba(59,130,246,1) 35%,
-          rgba(16,185,129,1) 70%,
+          rgba(37,99,235,1) 30%,
+          rgba(79,70,229,1) 70%,
           rgba(17,24,39,1) 100%);
         background-size: 220% 100%;
         -webkit-background-clip: text;
@@ -81,9 +81,8 @@ st.markdown(
         50%{background-position: 100% 50%;}
         100%{background-position: 0% 50%;}
       }
-
       .brand-title:hover{
-        filter: drop-shadow(0 18px 35px rgba(59,130,246,.18));
+        filter: drop-shadow(0 18px 35px rgba(37,99,235,.18));
         transform: translateY(-1px);
         transition: 220ms ease;
       }
@@ -109,7 +108,7 @@ st.markdown(
         font-size: 16px;
         font-weight: 800;
         margin: 0.2rem 0 0.8rem 0;
-        border-left: 3px solid rgba(59,130,246,.45);
+        border-left: 3px solid rgba(37,99,235,.45);
         padding-left: 10px;
       }
 
@@ -137,7 +136,7 @@ st.markdown(
       }
 
       .bar {height: 10px; border-radius: 999px; background: rgba(17,24,39,.08); overflow: hidden; margin-top: 10px;}
-      .bar > div {height: 100%; border-radius: 999px; background: rgba(59,130,246,.86);}
+      .bar > div {height: 100%; border-radius: 999px; background: rgba(37,99,235,.86);}
 
       /* Highlight */
       mark.hl {
@@ -174,9 +173,9 @@ st.markdown(
         margin-top: 14px;
         padding: 14px 16px;
         border-radius: 16px;
-        border: 1px solid rgba(0,0,0,.05);
+        border: 1px solid rgba(37,99,235,.10);
         background:
-          linear-gradient(180deg, rgba(59,130,246,.06), rgba(16,185,129,.04));
+          linear-gradient(180deg, rgba(37,99,235,.08), rgba(99,102,241,.06));
         box-shadow: 0 12px 30px rgba(0,0,0,.06);
         position: relative;
         overflow: hidden;
@@ -188,10 +187,10 @@ st.markdown(
         left:-30%;
         width: 60%;
         height: 180%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.62), transparent);
         transform: rotate(18deg);
         animation: shimmer 5.8s ease-in-out infinite;
-        opacity: .6;
+        opacity: .65;
         pointer-events:none;
       }
       @keyframes shimmer{
@@ -202,13 +201,54 @@ st.markdown(
       .tip-h{
         font-weight: 850;
         font-size: 13px;
-        color: rgba(17,24,39,.86);
+        color: rgba(17,24,39,.88);
         margin-bottom: 6px;
       }
       .tip-t{
         color: rgba(17,24,39,.62);
         font-size: 13px;
-        line-height: 1.55;
+        line-height: 1.65;
+        white-space: pre-line;
+      }
+
+      /* =========================
+         Cool primary button (Streamlit)
+         ========================= */
+      div.stButton > button[kind="primary"]{
+        width: 100%;
+        border: 1px solid rgba(255,255,255,.18) !important;
+        background: linear-gradient(90deg, rgba(37,99,235,1), rgba(79,70,229,1), rgba(14,165,233,1)) !important;
+        background-size: 220% 100% !important;
+        color: #ffffff !important;
+        font-weight: 900 !important;
+        border-radius: 14px !important;
+        padding: 0.85rem 1.1rem !important;
+        box-shadow: 0 18px 40px rgba(37,99,235,.22) !important;
+        transform: translateY(0px);
+        transition: transform 160ms ease, box-shadow 200ms ease, filter 200ms ease;
+        animation: btnFlow 7.5s ease-in-out infinite, btnGlow 3.6s ease-in-out infinite;
+      }
+      @keyframes btnFlow{
+        0%{background-position: 0% 50%;}
+        50%{background-position: 100% 50%;}
+        100%{background-position: 0% 50%;}
+      }
+      @keyframes btnGlow{
+        0%,100%{box-shadow: 0 18px 40px rgba(37,99,235,.18);}
+        50%{box-shadow: 0 22px 52px rgba(79,70,229,.26);}
+      }
+      div.stButton > button[kind="primary"]:hover{
+        transform: translateY(-2px);
+        filter: brightness(1.03) saturate(1.05);
+        box-shadow: 0 26px 60px rgba(37,99,235,.26) !important;
+      }
+      div.stButton > button[kind="primary"]:active{
+        transform: translateY(1px) scale(0.99);
+        box-shadow: 0 14px 34px rgba(37,99,235,.18) !important;
+      }
+      div.stButton > button[kind="primary"] p{
+        font-size: 18px !important;
+        letter-spacing: .02em;
       }
     </style>
     """,
@@ -493,12 +533,16 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
         )
 
 
-def render_minimal_tip():
+def render_tip_block():
+    tip_text = (
+        "撰写通知时应尽量涵盖时间窗口 / 执行范围 / 可替代方案 / 咨询渠道。\n"
+        "信息越完整，越不容易被误读噢💙"
+    )
     st.markdown(
-        """
+        f"""
         <div class="tip">
-          <div class="tip-h">写作建议（可忽略）</div>
-          <div class="tip-t">尽量补齐：时间窗口 / 执行范围 / 可替代方案 / 咨询渠道。信息越完整，越不容易被误读。</div>
+          <div class="tip-h">通知小贴士</div>
+          <div class="tip-t">{html.escape(tip_text)}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -544,7 +588,6 @@ def extract_phrases_from_result(res: dict) -> list[str]:
         ev = (it.get("evidence") or "").strip()
         if ev:
             phrases.append(ev)
-    # unique, keep order
     seen = set()
     out = []
     for p in phrases:
@@ -577,7 +620,6 @@ with left:
         value=st.session_state.last_inputs.get("text", ""),
     )
 
-    # ✅ 关键改动：如果已经有分析结果，则在这里直接显示高亮标注
     if st.session_state.result:
         phrases = extract_phrases_from_result(st.session_state.result)
         base_text = st.session_state.last_inputs.get("text", "")
@@ -585,9 +627,9 @@ with left:
             st.markdown('<div class="section-h" style="margin-top:14px;">原文（高亮标注）</div>', unsafe_allow_html=True)
             st.markdown(highlight_text_html(base_text, phrases), unsafe_allow_html=True)
         else:
-            render_minimal_tip()
+            render_tip_block()
     else:
-        render_minimal_tip()
+        render_tip_block()
 
 with right:
     st.markdown('<div class="section-h">场景与受众</div>', unsafe_allow_html=True)
@@ -625,7 +667,8 @@ with right:
         "custom": custom,
     }
 
-    analyze_btn = st.button("分析并生成改写", type="primary", use_container_width=True)
+    # ✅ Button text changed here
+    analyze_btn = st.button("发布预测", type="primary", use_container_width=True)
 
 st.divider()
 
@@ -647,7 +690,7 @@ result = st.session_state.result
 # Output
 # =========================
 if not result:
-    st.info("请输入文本并点击「分析并生成改写」。")
+    st.info("请输入文本并点击「发布预测」。")
 else:
     render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
 
@@ -668,7 +711,6 @@ else:
         with tab:
             render_rewrite_fulltext(rw)
 
-    # ---- Detailed analysis (no longer shows original highlight) ----
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     with st.expander("查看详细分析", expanded=False):
         tab1, tab2 = st.tabs(["风险点", "学生情绪"])
