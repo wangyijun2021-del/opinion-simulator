@@ -19,12 +19,16 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+      /* ✅ Streamlit 的实际背景容器不是 body，必须覆盖这些 */
+      .stApp,
+      [data-testid="stAppViewContainer"],
       body{
         background:
-          radial-gradient(1200px 600px at 18% 0%, rgba(59,130,246,.10), transparent 62%),
-          radial-gradient(900px 500px at 86% 12%, rgba(16,185,129,.08), transparent 58%),
-          linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(248,251,255,1) 55%, rgba(255,255,255,1) 100%);
+          radial-gradient(1200px 600px at 18% 0%, rgba(59,130,246,.12), transparent 62%),
+          radial-gradient(900px 500px at 86% 12%, rgba(16,185,129,.10), transparent 58%),
+          linear-gradient(180deg, rgba(236,246,255,1) 0%, rgba(246,250,255,1) 55%, rgba(255,255,255,1) 100%) !important;
       }
+
       .block-container {padding-top: 1.8rem; padding-bottom: 2.2rem; max-width: 1120px;}
       #MainMenu {visibility: hidden;}
       footer {visibility: hidden;}
@@ -46,8 +50,8 @@ st.markdown(
         width: 520px;
         height: 140px;
         background:
-          radial-gradient(220px 120px at 30% 40%, rgba(59,130,246,.14), transparent 65%),
-          radial-gradient(220px 120px at 70% 45%, rgba(99,102,241,.10), transparent 70%);
+          radial-gradient(220px 120px at 30% 40%, rgba(59,130,246,.16), transparent 65%),
+          radial-gradient(220px 120px at 70% 45%, rgba(99,102,241,.12), transparent 70%);
         filter: blur(12px);
         opacity: .95;
         pointer-events:none;
@@ -168,7 +172,7 @@ st.markdown(
         text-align:center;
       }
 
-      /* Minimal tip block */
+      /* Tip block */
       .tip {
         margin-top: 14px;
         padding: 14px 16px;
@@ -211,9 +215,7 @@ st.markdown(
         white-space: pre-line;
       }
 
-      /* =========================
-         Cool primary button (Streamlit)
-         ========================= */
+      /* Primary button (cool + animated) */
       div.stButton > button[kind="primary"]{
         width: 100%;
         border: 1px solid rgba(255,255,255,.18) !important;
@@ -249,6 +251,25 @@ st.markdown(
       div.stButton > button[kind="primary"] p{
         font-size: 18px !important;
         letter-spacing: .02em;
+      }
+
+      /* ✅ Loading state: disabled primary button shows animated dots */
+      div.stButton > button[kind="primary"][disabled]{
+        cursor: wait !important;
+        filter: saturate(0.98) brightness(0.98);
+      }
+      div.stButton > button[kind="primary"][disabled] p::after{
+        content: "...";
+        display: inline-block;
+        width: 18px;
+        overflow: hidden;
+        vertical-align: bottom;
+        margin-left: 8px;
+        animation: dots 1.2s steps(4,end) infinite;
+      }
+      @keyframes dots{
+        0%{width:0px;}
+        100%{width:18px;}
       }
     </style>
     """,
@@ -604,6 +625,8 @@ if "result" not in st.session_state:
     st.session_state.result = None
 if "last_inputs" not in st.session_state:
     st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}}
+if "run_pending" not in st.session_state:
+    st.session_state.run_pending = False
 
 # =========================
 # Input layout
@@ -620,12 +643,15 @@ with left:
         value=st.session_state.last_inputs.get("text", ""),
     )
 
-    if st.session_state.result:
+    # ✅ 预测后：直接在这里显示风险高亮（不再放折叠里）
+    if st.session_state.result and st.session_state.last_inputs.get("text", "").strip():
         phrases = extract_phrases_from_result(st.session_state.result)
-        base_text = st.session_state.last_inputs.get("text", "")
-        if phrases and base_text.strip():
+        if phrases:
             st.markdown('<div class="section-h" style="margin-top:14px;">原文（高亮标注）</div>', unsafe_allow_html=True)
-            st.markdown(highlight_text_html(base_text, phrases), unsafe_allow_html=True)
+            st.markdown(
+                highlight_text_html(st.session_state.last_inputs.get("text", ""), phrases),
+                unsafe_allow_html=True,
+            )
         else:
             render_tip_block()
     else:
@@ -667,24 +693,39 @@ with right:
         "custom": custom,
     }
 
-    # ✅ Button text changed here
-    analyze_btn = st.button("发布预测", type="primary", use_container_width=True)
+    # ✅ Loading-state button
+    btn_slot = st.empty()
+
+    if st.session_state.run_pending:
+        btn_slot.button("预测中", type="primary", use_container_width=True, disabled=True)
+    else:
+        clicked = btn_slot.button("发布预测", type="primary", use_container_width=True)
+        if clicked:
+            if not text.strip():
+                st.warning("请先输入一段文本。")
+            else:
+                st.session_state.run_pending = True
+                st.session_state.last_inputs = {"text": text, "scenario": scenario, "profile": profile}
+                st.rerun()
 
 st.divider()
 
 # =========================
-# Run
+# Run pending job (2nd pass)
 # =========================
-if analyze_btn:
-    if not text.strip():
-        st.warning("请先输入一段文本。")
-    else:
-        with st.spinner("正在分析…"):
-            result = analyze(text, scenario, profile)
-        st.session_state.result = result
-        st.session_state.last_inputs = {"text": text, "scenario": scenario, "profile": profile}
+if st.session_state.run_pending:
+    _text = st.session_state.last_inputs.get("text", "")
+    _scenario = st.session_state.last_inputs.get("scenario", "宿舍与安全管理通知")
+    _profile = st.session_state.last_inputs.get("profile", {})
+
+    res = analyze(_text, _scenario, _profile)
+    st.session_state.result = res
+
+    st.session_state.run_pending = False
+    st.rerun()
 
 result = st.session_state.result
+current_text = st.session_state.last_inputs.get("text", "")
 
 # =========================
 # Output
@@ -696,6 +737,51 @@ else:
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
+    # ✅ 2) 不折叠：并列板块；✅ 3) 放在改写建议之前；✅ 改名为「情绪预测」
+    st.markdown('<div class="section-h">情绪预测</div>', unsafe_allow_html=True)
+    cL, cR = st.columns([1.15, 1.0], gap="large")
+
+    with cL:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.markdown("**风险点**")
+        issues = result.get("issues", []) or []
+        if not issues:
+            st.info("未识别到明显风险点。")
+        else:
+            for i, it in enumerate(issues, start=1):
+                st.markdown(f"**{i}. {it.get('title','(未命名)')}**")
+                st.markdown(f"- 触发片段：{it.get('evidence','')}")
+                st.markdown(f"- 原因：{it.get('why','')}")
+                st.markdown(f"- 建议：{it.get('rewrite_tip','')}")
+                if i != len(issues):
+                    st.markdown("---")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with cR:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.markdown("**学生情绪**")
+        emos = result.get("student_emotions", []) or []
+        if not emos:
+            st.info("未生成情绪画像。")
+        else:
+            for e in emos:
+                intensity = clamp01(e.get("intensity", 0))
+                st.markdown(
+                    f"""
+                    <div style="margin-top:10px;">
+                      <span class='badge'>{html.escape(str(e.get('group','群体')))}</span>
+                      <span class='badge'>情绪：{html.escape(str(e.get('sentiment','')))}</span>
+                      <span class='badge'>强度：{intensity:.2f}</span>
+                      <div style='margin-top:8px;' class='mono'>“{html.escape(str(e.get('sample_comment','')))}”</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+
+    # ---- Rewrite area ----
     st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
 
     rewrites = result.get("rewrites", []) or []
@@ -710,45 +796,6 @@ else:
         rw["name"] = tname
         with tab:
             render_rewrite_fulltext(rw)
-
-    st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
-    with st.expander("查看详细分析", expanded=False):
-        tab1, tab2 = st.tabs(["风险点", "学生情绪"])
-
-        with tab1:
-            issues = result.get("issues", []) or []
-            if not issues:
-                st.info("未识别到明显风险点。")
-            else:
-                st.markdown("**风险点列表**")
-                for i, it in enumerate(issues, start=1):
-                    st.markdown(f"**{i}. {it.get('title','(未命名)')}**")
-                    st.markdown(f"- 触发片段：{it.get('evidence','')}")
-                    st.markdown(f"- 原因：{it.get('why','')}")
-                    st.markdown(f"- 建议：{it.get('rewrite_tip','')}")
-                    st.divider()
-
-        with tab2:
-            emos = result.get("student_emotions", []) or []
-            if not emos:
-                st.info("未生成情绪画像。")
-            else:
-                for e in emos:
-                    intensity = clamp01(e.get("intensity", 0))
-                    st.markdown(
-                        f"""
-                        <div class='card'>
-                          <div>
-                            <span class='badge'>{html.escape(str(e.get('group','群体')))}</span>
-                            <span class='badge'>情绪：{html.escape(str(e.get('sentiment','')))}</span>
-                            <span class='badge'>强度：{intensity:.2f}</span>
-                          </div>
-                          <div style='margin-top:10px;' class='mono'>“{html.escape(str(e.get('sample_comment','')))}”</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                    st.write("")
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
