@@ -169,7 +169,7 @@ st.markdown(
         text-align:center;
       }
 
-      /* Minimal tip block (no SVG, no images) */
+      /* Minimal tip block */
       .tip {
         margin-top: 14px;
         padding: 14px 16px;
@@ -216,7 +216,7 @@ st.markdown(
 )
 
 # =========================
-# Header (center, no extra persona text)
+# Header
 # =========================
 st.markdown(
     """
@@ -536,6 +536,24 @@ def render_rewrite_fulltext(rw: dict):
     )
 
 
+def extract_phrases_from_result(res: dict) -> list[str]:
+    phrases = []
+    if not res:
+        return phrases
+    for it in (res.get("issues", []) or []):
+        ev = (it.get("evidence") or "").strip()
+        if ev:
+            phrases.append(ev)
+    # unique, keep order
+    seen = set()
+    out = []
+    for p in phrases:
+        if p not in seen:
+            out.append(p)
+            seen.add(p)
+    return out
+
+
 # =========================
 # Session state
 # =========================
@@ -559,8 +577,17 @@ with left:
         value=st.session_state.last_inputs.get("text", ""),
     )
 
-    # Minimal, safe, premium tip (no svg/img)
-    render_minimal_tip()
+    # ✅ 关键改动：如果已经有分析结果，则在这里直接显示高亮标注
+    if st.session_state.result:
+        phrases = extract_phrases_from_result(st.session_state.result)
+        base_text = st.session_state.last_inputs.get("text", "")
+        if phrases and base_text.strip():
+            st.markdown('<div class="section-h" style="margin-top:14px;">原文（高亮标注）</div>', unsafe_allow_html=True)
+            st.markdown(highlight_text_html(base_text, phrases), unsafe_allow_html=True)
+        else:
+            render_minimal_tip()
+    else:
+        render_minimal_tip()
 
 with right:
     st.markdown('<div class="section-h">场景与受众</div>', unsafe_allow_html=True)
@@ -615,7 +642,6 @@ if analyze_btn:
         st.session_state.last_inputs = {"text": text, "scenario": scenario, "profile": profile}
 
 result = st.session_state.result
-current_text = st.session_state.last_inputs.get("text", "")
 
 # =========================
 # Output
@@ -634,7 +660,7 @@ else:
         rewrites.append({"name": f"版本{len(rewrites)+1}", "pred_risk_score": "-", "text": "", "why": ""})
     rewrites = rewrites[:3]
 
-    name_to_rw = { (rw.get("name") or "").strip(): rw for rw in rewrites }
+    name_to_rw = {(rw.get("name") or "").strip(): rw for rw in rewrites}
     tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
     for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
         rw = name_to_rw.get(tname, {"name": tname, "pred_risk_score": "-", "text": "", "why": ""})
@@ -642,6 +668,7 @@ else:
         with tab:
             render_rewrite_fulltext(rw)
 
+    # ---- Detailed analysis (no longer shows original highlight) ----
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     with st.expander("查看详细分析", expanded=False):
         tab1, tab2 = st.tabs(["风险点", "学生情绪"])
@@ -651,16 +678,6 @@ else:
             if not issues:
                 st.info("未识别到明显风险点。")
             else:
-                phrases = []
-                for it in issues:
-                    ev = (it.get("evidence") or "").strip()
-                    if ev:
-                        phrases.append(ev)
-
-                st.markdown("**原文（标注）**")
-                st.markdown(highlight_text_html(current_text, phrases), unsafe_allow_html=True)
-
-                st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
                 st.markdown("**风险点列表**")
                 for i, it in enumerate(issues, start=1):
                     st.markdown(f"**{i}. {it.get('title','(未命名)')}**")
