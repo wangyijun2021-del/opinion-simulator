@@ -37,12 +37,30 @@ st.markdown(
 
       /* Header */
       .hero { text-align:center; padding: 8px 0 14px 0; position: relative; }
+
+      /* Title: gradient + dynamic */
       .hero-title{
-        font-size: 42px; font-weight: 900; letter-spacing: -0.03em;
-        color: rgba(15, 23, 42, .95); margin: 0;
-        animation: floatIn .7s ease-out both;
+        font-size: 44px;
+        font-weight: 950;
+        letter-spacing: -0.03em;
+        margin: 0;
+        display: inline-block;
+
+        background: linear-gradient(90deg, rgba(37,99,235,1), rgba(59,130,246,1), rgba(14,165,233,1));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+
         text-shadow: 0 10px 35px rgba(37,99,235,.18);
+        animation: floatIn .7s ease-out both, titleGlow 3.2s ease-in-out infinite;
+        transition: transform .18s ease, filter .2s ease;
+        cursor: default;
       }
+      .hero-title:hover{
+        transform: translateY(-2px) scale(1.01);
+        filter: saturate(1.15);
+      }
+
       .hero-pill{
         display:inline-flex; align-items:center; gap:10px;
         padding: 10px 16px; border-radius: 999px;
@@ -59,6 +77,10 @@ st.markdown(
       }
       @keyframes floatIn{ from{ transform: translateY(8px); opacity: 0; } to{ transform: translateY(0); opacity: 1; } }
       @keyframes glow{ 0%,100% { box-shadow: 0 10px 30px rgba(2,6,23,.06); } 50% { box-shadow: 0 18px 40px rgba(37,99,235,.12); } }
+      @keyframes titleGlow{
+        0%,100%{ text-shadow: 0 10px 35px rgba(37,99,235,.18); }
+        50%{ text-shadow: 0 18px 60px rgba(14,165,233,.22); }
+      }
 
       /* Section title */
       .section-h{
@@ -84,7 +106,7 @@ st.markdown(
       .kpi-value {font-size: 34px; font-weight: 900; margin-top: 6px; color: rgba(15,23,42,.92);}
       .kpi-value2 {font-size: 22px; font-weight: 900; margin-top: 10px; color: rgba(15,23,42,.92);}
       .bar {height: 10px; border-radius: 999px; background: rgba(15,23,42,.08); overflow: hidden; margin-top: 10px;}
-      .bar > div {height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(37,99,235,.95), rgba(59,130,246,.75));}
+      .bar > div {height: 100%; border-radius: 999px;}
 
       /* Highlight */
       mark.hl { background: rgba(59, 130, 246, 0.22); color: inherit; padding: 0 .18em; border-radius: .35em; }
@@ -199,23 +221,6 @@ st.markdown(
       @keyframes blink{
         0%,100%{ opacity:.25; transform: translateY(0); }
         50%{ opacity:1; transform: translateY(-2px); }
-      }
-
-      /* Secondary action button (emoji): make it match copy button */
-      div.stButton > button[kind="secondary"]{
-        width: 100% !important;
-        border-radius: 14px !important;
-        padding: 10px 12px !important;
-        font-weight: 900 !important;
-        font-size: 15px !important;
-        border: 1px solid rgba(37,99,235,.25) !important;
-        background: rgba(37,99,235,.08) !important;
-        color: rgba(37,99,235,1) !important;
-        transition: transform .15s ease, filter .2s ease;
-      }
-      div.stButton > button[kind="secondary"]:hover{
-        transform: translateY(-1px);
-        filter: brightness(1.02);
       }
 
       /* Footnote */
@@ -467,9 +472,18 @@ def highlight_text_html(raw_text: str, phrases: list[str]) -> str:
 
     return f"<div class='card' style='line-height:1.85;font-size:15px;'>{safe}</div>"
 
+def _bar_gradient_by_level(risk_level: str) -> str:
+    if risk_level == "LOW":
+        return "linear-gradient(90deg, rgba(34,197,94,.95), rgba(16,185,129,.75))"   # green
+    if risk_level == "MEDIUM":
+        return "linear-gradient(90deg, rgba(234,179,8,.95), rgba(251,191,36,.75))"  # yellow
+    return "linear-gradient(90deg, rgba(239,68,68,.95), rgba(244,63,94,.75))"       # red
+
 def render_overview(risk_score: int, risk_level: str, summary: str):
     pct = max(0, min(100, int(risk_score)))
     k1, k2, k3 = st.columns([1, 1, 2], gap="medium")
+
+    bar_bg = _bar_gradient_by_level(risk_level)
 
     with k1:
         st.markdown(
@@ -477,7 +491,7 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
             <div class="card">
               <div class="kpi-label">风险分数</div>
               <div class="kpi-value">{pct}</div>
-              <div class="bar"><div style="width:{pct}%;"></div></div>
+              <div class="bar"><div style="width:{pct}%; background:{bar_bg};"></div></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -518,8 +532,7 @@ def tip_block():
         unsafe_allow_html=True,
     )
 
-def clipboard_copy_button(text: str, key: str):
-    """复制按钮（JS clipboard）"""
+def clipboard_copy_button(text: str, key: str, label: str = "复制该版本"):
     safe = json.dumps(text, ensure_ascii=False)
     components.html(
         f"""
@@ -529,12 +542,14 @@ def clipboard_copy_button(text: str, key: str):
             border:1px solid rgba(37,99,235,.25);
             background: rgba(37,99,235,.08);
             color: rgba(37,99,235,1);
-            padding:10px 12px;
-            border-radius:14px;
+            padding:12px 12px;
+            border-radius:16px;
             font-weight:900;
             font-size:15px;
             cursor:pointer;
-          ">复制该版本</button>
+            box-shadow: 0 10px 26px rgba(2,6,23,.04);
+            transition: transform .15s ease, filter .2s ease;
+          ">{html.escape(label)}</button>
         </div>
         <script>
           const btn = document.getElementById("btn-{key}");
@@ -542,24 +557,79 @@ def clipboard_copy_button(text: str, key: str):
             try {{
               await navigator.clipboard.writeText({safe});
               btn.innerText = "已复制 ✓";
-              setTimeout(() => btn.innerText = "复制该版本", 1200);
+              setTimeout(() => btn.innerText = "{html.escape(label)}", 1200);
             }} catch (e) {{
               btn.innerText = "复制失败（请手动全选复制）";
-              setTimeout(() => btn.innerText = "复制该版本", 1600);
+              setTimeout(() => btn.innerText = "{html.escape(label)}", 1600);
             }}
           }});
         </script>
         """,
-        height=52,
+        height=64,
     )
 
+def _consume_query_flag(flag: str) -> bool:
+    # Streamlit query_params behaves like a dict-like proxy
+    qp = st.query_params
+    v = qp.get(flag, None)
+    hit = False
+    if v is not None:
+        # v may be str or list[str]
+        if isinstance(v, list):
+            hit = (len(v) > 0 and v[0] == "1")
+        else:
+            hit = (str(v) == "1")
+
+    if hit:
+        # Clear just this flag to avoid repeated triggering on refresh
+        try:
+            qp.pop(flag)
+        except Exception:
+            # fallback: clear all (rare)
+            try:
+                qp.clear()
+            except Exception:
+                pass
+    return hit
+
+def js_toggle_button(label: str, key: str) -> bool:
+    """
+    HTML 同款按钮：点击后通过 query param 通知 Python 侧 rerun。
+    """
+    flag = f"act_{key}"
+
+    components.html(
+        f"""
+        <div style="margin-top:2px;">
+          <button id="btn-{key}" style="
+            width:100%;
+            border:1px solid rgba(37,99,235,.25);
+            background: rgba(37,99,235,.08);
+            color: rgba(37,99,235,1);
+            padding:12px 12px;
+            border-radius:16px;
+            font-weight:900;
+            font-size:15px;
+            cursor:pointer;
+            box-shadow: 0 10px 26px rgba(2,6,23,.04);
+            transition: transform .15s ease, filter .2s ease;
+          ">{html.escape(label)}</button>
+        </div>
+        <script>
+          const btn = document.getElementById("btn-{key}");
+          btn.addEventListener("click", () => {{
+            const url = new URL(window.location.href);
+            url.searchParams.set("{flag}", "1");
+            window.location.href = url.toString();
+          }});
+        </script>
+        """,
+        height=64,
+    )
+
+    return _consume_query_flag(flag)
+
 def pretty_notice(raw: str) -> str:
-    """
-    把模型输出的 markdown/奇怪转义，整理成更像群通知的排版：
-    - 去掉 \1. 这种转义
-    - 去掉 **加粗**、__加粗__、`代码`
-    - 列表/编号分段更清楚
-    """
     if not raw:
         return ""
 
@@ -588,7 +658,6 @@ def pretty_notice(raw: str) -> str:
     return s
 
 def add_emojis_smart(text: str) -> str:
-    """在合适位置加少量 emoji（不刷屏），更像校园通知。"""
     if not text:
         return ""
 
@@ -632,7 +701,6 @@ if "last_inputs" not in st.session_state:
     st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}}
 if "is_loading" not in st.session_state:
     st.session_state.is_loading = False
-
 for k in ["更清晰", "更安抚", "更可执行"]:
     st.session_state.setdefault(f"emoji_on_{k}", False)
 
@@ -730,7 +798,6 @@ if not result:
 
 render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
 
-# ---- Highlight ----
 issues = result.get("issues", []) or []
 phrases = [(it.get("evidence") or "").strip() for it in issues if (it.get("evidence") or "").strip()]
 
@@ -855,16 +922,19 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
             unsafe_allow_html=True,
         )
 
-        # Buttons
+        # 留出间距，避免按钮太挤
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+
+        # 左：emoji 右：复制（同款按钮）
         b1, b2 = st.columns(2, gap="medium")
         with b1:
-            clipboard_copy_button(final_txt, key=f"copy_{tname}")
-
-        with b2:
             label = "取消emoji" if st.session_state[emoji_key] else "添加emoji"
-            if st.button(label, key=f"emoji_btn_{tname}", type="secondary", use_container_width=True):
+            if js_toggle_button(label, key=f"emoji_{tname}"):
                 st.session_state[emoji_key] = not st.session_state[emoji_key]
                 st.rerun()
+
+        with b2:
+            clipboard_copy_button(final_txt, key=f"copy_{tname}", label="复制该版本")
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
