@@ -907,7 +907,7 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
             clipboard_copy_button(final_txt, key=f"copy_{tname}")
         with b2:
             label = "取消emoji" if st.session_state[emoji_key] else "添加emoji"
-            if js_action_button(label, key=f"emoji_{tname}"):
+            if st.button(label, key=f"btn_emoji_{tname}", type="secondary", use_container_width=True):
                 st.session_state[emoji_key] = not st.session_state[emoji_key]
                 st.rerun()
 
