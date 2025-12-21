@@ -550,6 +550,53 @@ def clipboard_copy_button(text: str, key: str):
         """,
         height=52,
     )
+def js_action_button(label: str, key: str) -> bool:
+    """
+    画一个和“复制该版本”同款样式的按钮。
+    点击后用 st.session_state["_js_clicked_<key>"]=True 通知 Python。
+    """
+    flag = f"_js_clicked_{key}"
+    if flag not in st.session_state:
+        st.session_state[flag] = False
+
+    components.html(
+        f"""
+        <div style="margin-top:2px;">
+          <button id="btn-{key}" style="
+            width:100%;
+            border:1px solid rgba(37,99,235,.25);
+            background: rgba(37,99,235,.08);
+            color: rgba(37,99,235,1);
+            padding:10px 12px;
+            border-radius:14px;
+            font-weight:900;
+            font-size:15px;
+            cursor:pointer;
+          ">{html.escape(label)}</button>
+        </div>
+        <script>
+          const btn = document.getElementById("btn-{key}");
+          btn.addEventListener("click", () => {{
+            const params = new URLSearchParams(window.location.search);
+            params.set("{flag}", "1");
+            window.location.search = params.toString();
+          }});
+        </script>
+        """,
+        height=52,
+    )
+
+    # 通过 query param 判断是否刚刚点了这个按钮
+    qp = st.query_params
+    if qp.get(flag) == "1":
+        # 清掉 query param，避免刷新反复触发
+        try:
+            st.query_params.pop(flag)
+        except Exception:
+            pass
+        return True
+
+    return False
 
 def pretty_notice(raw: str) -> str:
     """
@@ -856,8 +903,8 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
         with b1:
             clipboard_copy_button(final_txt, key=f"copy_{tname}")
         with b2:
-            label = "取消emoji" if st.session_state[emoji_key] else "自动添加emoji"
-            if st.button(label, key=f"btn_emoji_{tname}", type="secondary", use_container_width=True):
+            label = "取消emoji" if st.session_state[emoji_key] else "添加emoji"
+            if js_action_button(label, key=f"emoji_{tname}"):
                 st.session_state[emoji_key] = not st.session_state[emoji_key]
                 st.rerun()
 
