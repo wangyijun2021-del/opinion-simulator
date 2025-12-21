@@ -111,6 +111,23 @@ st.markdown(
         font-size: 12px;
         margin-top: 18px;
       }
+
+      /* Illustration container */
+      .illu {
+        margin-top: 14px;
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(59,130,246,0.04);
+        border: 1px solid rgba(0,0,0,.04);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .illu-text {
+        color: rgba(17,24,39,.55);
+        font-size: 13px;
+        line-height: 1.55;
+      }
     </style>
     """,
     unsafe_allow_html=True,
@@ -309,7 +326,6 @@ def analyze(text: str, scenario: str, profile: dict):
         if parsed is None:
             return local_fallback(text)
 
-        # Normalize rewrites to fixed names/order
         rewrites = parsed.get("rewrites", []) or []
         buckets = {"更清晰": None, "更安抚": None, "更可执行": None}
         for rw in rewrites:
@@ -323,7 +339,6 @@ def analyze(text: str, scenario: str, profile: dict):
             if buckets[n] is not None:
                 fixed.append(buckets[n])
 
-        # Fill missing with any leftovers
         if len(fixed) < 3:
             for rw in rewrites:
                 if rw not in fixed:
@@ -408,6 +423,70 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
         )
 
 
+def render_student_illustration():
+    # Cute but restrained: campus vibe (no emoji, no cartoon faces)
+    st.markdown(
+        """
+        <div class="illu">
+          <svg width="120" height="86" viewBox="0 0 240 172" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:.70;">
+            <!-- ground -->
+            <path d="M18 146C52 132 88 126 120 126C152 126 188 132 222 146" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+            <!-- simple building -->
+            <path d="M52 138V78L92 56L132 78V138" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M70 138V96H114V138" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M78 106H106" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+            <!-- small figures (abstract) -->
+            <circle cx="162" cy="108" r="6" fill="#10B981"/>
+            <path d="M162 116V132" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+            <path d="M154 124H170" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="190" cy="112" r="6" fill="#10B981"/>
+            <path d="M190 120V134" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+            <path d="M182 128H198" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+            <!-- sky lines -->
+            <path d="M146 44C168 30 190 28 214 36" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+            <path d="M150 58C176 46 196 46 220 54" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
+          </svg>
+          <div class="illu-text">
+            把通知当作一次“对话”来设计：明确边界、解释原因、给出选项与渠道，往往比强调命令更有效。
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_rewrite_fulltext(rw: dict):
+    pr = rw.get("pred_risk_score", "-")
+    why = rw.get("why", "")
+    txt = rw.get("text", "")
+
+    st.markdown(
+        f"""
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+            <div style="font-weight:850; font-size:14px; line-height:1.25;">{html.escape(str(rw.get("name","")))}</div>
+            <div class="pill">预测风险 {html.escape(str(pr))}</div>
+          </div>
+          <div class="muted clamp3" style="margin-top:10px; font-size:13px; line-height:1.45;">
+            {html.escape(str(why))}
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Full text shown directly (no expander)
+    safe_text = html.escape(str(txt)).replace("\n", "<br>")
+    st.markdown(
+        f"""
+        <div class="card" style="margin-top:12px; font-size:15px; line-height:1.78;">
+          {safe_text}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # =========================
 # Session state
 # =========================
@@ -430,6 +509,9 @@ with left:
         label_visibility="collapsed",
         value=st.session_state.last_inputs.get("text", ""),
     )
+
+    # 👇 Add illustration to fill empty area (requested)
+    render_student_illustration()
 
 with right:
     st.markdown('<div class="section-h">场景与受众</div>', unsafe_allow_html=True)
@@ -496,39 +578,21 @@ else:
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    # ---- Rewrite area: single original, three tabs, no repeated original ----
+    # ---- Rewrite area: show full text directly (requested) ----
     st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
 
     rewrites = result.get("rewrites", []) or []
-    # Ensure three items
     while len(rewrites) < 3:
         rewrites.append({"name": f"版本{len(rewrites)+1}", "pred_risk_score": "-", "text": "", "why": ""})
     rewrites = rewrites[:3]
 
-    # Build tab order
     name_to_rw = { (rw.get("name") or "").strip(): rw for rw in rewrites }
     tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
     for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
-        rw = name_to_rw.get(tname, {})
+        rw = name_to_rw.get(tname, {"name": tname, "pred_risk_score": "-", "text": "", "why": ""})
+        rw["name"] = tname  # hard enforce tab name
         with tab:
-            pr = rw.get("pred_risk_score", "-")
-            why = rw.get("why", "")
-            st.markdown(
-                f"""
-                <div class="card">
-                  <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-                    <div style="font-weight:850; font-size:14px; line-height:1.25;">{html.escape(tname)}</div>
-                    <div class="pill">预测风险 {html.escape(str(pr))}</div>
-                  </div>
-                  <div class="muted clamp3" style="margin-top:10px; font-size:13px; line-height:1.45;">
-                    {html.escape(str(why))}
-                  </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            with st.expander("查看改写全文", expanded=False):
-                st.write(rw.get("text", ""))
+            render_rewrite_fulltext(rw)
 
     # ---- Detailed analysis: risk + emotion ----
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
@@ -546,7 +610,6 @@ else:
                     if ev:
                         phrases.append(ev)
 
-                # Original appears ONCE here (with highlight)
                 st.markdown("**原文（标注）**")
                 st.markdown(highlight_text_html(current_text, phrases), unsafe_allow_html=True)
 
