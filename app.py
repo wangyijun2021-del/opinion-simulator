@@ -9,7 +9,7 @@ import streamlit as st
 # Page config
 # =========================
 st.set_page_config(
-    page_title="清小知——高校通知模拟器",
+    page_title="清小知｜高校通知小助手",
     layout="wide",
 )
 
@@ -19,122 +19,111 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-      /* ---- App background ---- */
       body{
         background:
-          radial-gradient(1100px 520px at 12% 2%, rgba(59,130,246,.10), transparent 60%),
-          radial-gradient(900px 460px at 88% 8%, rgba(16,185,129,.08), transparent 55%),
-          radial-gradient(1000px 520px at 55% 95%, rgba(245,158,11,.06), transparent 60%),
+          radial-gradient(1200px 600px at 18% 0%, rgba(59,130,246,.08), transparent 60%),
+          radial-gradient(900px 500px at 86% 12%, rgba(16,185,129,.06), transparent 55%),
           #ffffff;
       }
-      /* Subtle animated sheen layer */
-      .stApp::before{
-        content:"";
-        position: fixed;
-        inset: -120px;
-        z-index: -1;
-        background:
-          radial-gradient(800px 360px at 10% 20%, rgba(59,130,246,.10), transparent 60%),
-          radial-gradient(700px 320px at 90% 10%, rgba(16,185,129,.08), transparent 55%),
-          radial-gradient(900px 420px at 50% 100%, rgba(245,158,11,.06), transparent 60%);
-        filter: blur(6px);
-        opacity: 0.85;
-        animation: drift 16s ease-in-out infinite;
-      }
-      @keyframes drift{
-        0%   { transform: translate3d(0,0,0) scale(1); }
-        50%  { transform: translate3d(14px,-10px,0) scale(1.02); }
-        100% { transform: translate3d(0,0,0) scale(1); }
-      }
-
-      .block-container {padding-top: 2.0rem; padding-bottom: 2.0rem; max-width: 1120px;}
+      .block-container {padding-top: 1.8rem; padding-bottom: 2.2rem; max-width: 1120px;}
       #MainMenu {visibility: hidden;}
       footer {visibility: hidden;}
       header {visibility: hidden;}
 
-      /* ---- Entrance fade ---- */
-      .fadein{animation: fadeIn .55s ease-out both;}
-      @keyframes fadeIn{
-        from{opacity:0; transform: translateY(6px);}
-        to{opacity:1; transform: translateY(0);}
+      /* Header */
+      .hero{
+        position: relative;
+        margin: 0 0 1.2rem 0;
+        padding: 0.2rem 0 0.4rem 0;
+        text-align: center;
+      }
+      .hero::before{
+        content:"";
+        position:absolute;
+        left:50%;
+        top:-18px;
+        transform:translateX(-50%);
+        width: 520px;
+        height: 140px;
+        background:
+          radial-gradient(220px 120px at 30% 40%, rgba(59,130,246,.10), transparent 65%),
+          radial-gradient(220px 120px at 70% 45%, rgba(16,185,129,.08), transparent 70%);
+        filter: blur(10px);
+        opacity: .9;
+        pointer-events:none;
+        z-index:0;
       }
 
-      /* ---- Header ---- */
-      .brand-wrap{
-        position: relative;
-        margin-bottom: 6px;
-      }
-      .brand-line{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap: 16px;
-      }
-      .brand-left{
-        display:flex;
-        flex-direction:column;
-        gap: 6px;
-      }
       .brand-title{
-        font-size: 30px;
-        font-weight: 880;
-        letter-spacing: -0.02em;
-        margin: 0;
-        line-height: 1.08;
+        position: relative;
+        z-index: 1;
+        font-size: 44px;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        line-height: 1.0;
+        display: inline-block;
+
+        background: linear-gradient(90deg,
+          rgba(17,24,39,1) 0%,
+          rgba(59,130,246,1) 35%,
+          rgba(16,185,129,1) 70%,
+          rgba(17,24,39,1) 100%);
+        background-size: 220% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+
+        animation: titleFlow 8s ease-in-out infinite;
+        transform: translateY(0);
       }
-      .brand-sub{
+      @keyframes titleFlow{
+        0%{background-position: 0% 50%;}
+        50%{background-position: 100% 50%;}
+        100%{background-position: 0% 50%;}
+      }
+
+      .brand-title:hover{
+        filter: drop-shadow(0 18px 35px rgba(59,130,246,.18));
+        transform: translateY(-1px);
+        transition: 220ms ease;
+      }
+
+      .brand-subtitle{
+        position: relative;
+        z-index: 1;
+        margin-top: 0.6rem;
         color: rgba(17,24,39,.62);
         font-size: 14px;
-        line-height: 1.55;
-        margin: 0;
-      }
-      .brand-badge{
-        display:inline-flex;
-        align-items:center;
-        gap:8px;
-        padding: 6px 10px;
+        line-height: 1.6;
+        display:inline-block;
+        padding: 8px 14px;
         border-radius: 999px;
         border: 1px solid rgba(0,0,0,.06);
-        background: rgba(255,255,255,.74);
-        color: rgba(17,24,39,.75);
-        font-size: 12px;
-        white-space: nowrap;
-        box-shadow: 0 8px 22px rgba(0,0,0,.05);
-      }
-      .brand-dot{
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        background: rgba(59,130,246,.86);
-        box-shadow: 0 0 0 6px rgba(59,130,246,.10);
+        background: rgba(255,255,255,.72);
+        box-shadow: 0 10px 26px rgba(0,0,0,.06);
+        backdrop-filter: blur(6px);
       }
 
+      /* Section heading */
       .section-h{
         font-size: 16px;
-        font-weight: 820;
+        font-weight: 800;
         margin: 0.2rem 0 0.8rem 0;
         border-left: 3px solid rgba(59,130,246,.45);
         padding-left: 10px;
       }
 
-      /* ---- Cards ---- */
+      /* Cards */
       .card {
-        background: rgba(255,255,255,.92);
+        background: rgba(255,255,255,.90);
         border-radius: 18px;
         padding: 16px 18px;
         box-shadow: 0 10px 30px rgba(0,0,0,.06);
         border: 1px solid rgba(0,0,0,.04);
-        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
       }
-      .card:hover{
-        transform: translateY(-1px);
-        box-shadow: 0 16px 42px rgba(0,0,0,.08);
-        border-color: rgba(59,130,246,.10);
-      }
-
       .kpi-label {color: rgba(17,24,39,.55); font-size: 12px; letter-spacing: .06em;}
-      .kpi-value {font-size: 34px; font-weight: 880; margin-top: 6px;}
-      .kpi-value2 {font-size: 22px; font-weight: 880; margin-top: 10px;}
+      .kpi-value {font-size: 34px; font-weight: 850; margin-top: 6px;}
+      .kpi-value2 {font-size: 22px; font-weight: 850; margin-top: 10px;}
       .muted {color: rgba(17,24,39,.62);}
       .mono {font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
 
@@ -148,7 +137,7 @@ st.markdown(
       }
 
       .bar {height: 10px; border-radius: 999px; background: rgba(17,24,39,.08); overflow: hidden; margin-top: 10px;}
-      .bar > div {height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(59,130,246,.92), rgba(16,185,129,.72));}
+      .bar > div {height: 100%; border-radius: 999px; background: rgba(59,130,246,.86);}
 
       /* Highlight */
       mark.hl {
@@ -159,19 +148,12 @@ st.markdown(
       }
 
       /* Compact text */
-      .clamp2{
-        display:-webkit-box;
-        -webkit-line-clamp:2;
-        -webkit-box-orient:vertical;
-        overflow:hidden;
-      }
       .clamp3{
         display:-webkit-box;
         -webkit-line-clamp:3;
         -webkit-box-orient:vertical;
         overflow:hidden;
       }
-
       .pill{
         font-size:12px; padding:4px 10px; border-radius:999px;
         border:1px solid rgba(0,0,0,.08);
@@ -180,57 +162,53 @@ st.markdown(
         white-space:nowrap;
       }
 
-      /* Brand illustration container (no text, decorative) */
-      .illu {
-        margin-top: 14px;
-        padding: 16px;
-        border-radius: 18px;
-        background: rgba(255,255,255,.70);
-        border: 1px solid rgba(0,0,0,.04);
-        box-shadow: 0 10px 30px rgba(0,0,0,.05);
-        overflow:hidden;
-        position: relative;
-      }
-      .illu::after{
-        content:"";
-        position:absolute;
-        inset:-60px;
-        background:
-          radial-gradient(260px 160px at 10% 40%, rgba(59,130,246,.10), transparent 60%),
-          radial-gradient(240px 160px at 90% 10%, rgba(16,185,129,.08), transparent 55%),
-          radial-gradient(260px 160px at 60% 110%, rgba(245,158,11,.06), transparent 60%);
-        filter: blur(8px);
-        opacity:.9;
-        animation: drift 14s ease-in-out infinite;
-        pointer-events:none;
-      }
-      .illu-inner{position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:12px;}
-      .illu-tag{
-        font-size:12px;
-        color: rgba(17,24,39,.70);
-        border: 1px solid rgba(0,0,0,.06);
-        background: rgba(255,255,255,.70);
-        padding: 6px 10px;
-        border-radius: 999px;
-        white-space:nowrap;
-      }
-
-      /* Streamlit button polish */
-      div.stButton > button{
-        border-radius: 14px !important;
-        border: 1px solid rgba(0,0,0,.08) !important;
-        box-shadow: 0 10px 26px rgba(0,0,0,.08) !important;
-        transition: transform .15s ease, box-shadow .15s ease !important;
-      }
-      div.stButton > button:hover{
-        transform: translateY(-1px);
-        box-shadow: 0 16px 36px rgba(0,0,0,.10) !important;
-      }
-
       .footnote {
         color: rgba(17,24,39,.48);
         font-size: 12px;
         margin-top: 18px;
+        text-align:center;
+      }
+
+      /* Minimal tip block (no SVG, no images) */
+      .tip {
+        margin-top: 14px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid rgba(0,0,0,.05);
+        background:
+          linear-gradient(180deg, rgba(59,130,246,.06), rgba(16,185,129,.04));
+        box-shadow: 0 12px 30px rgba(0,0,0,.06);
+        position: relative;
+        overflow: hidden;
+      }
+      .tip::after{
+        content:"";
+        position:absolute;
+        top:-40%;
+        left:-30%;
+        width: 60%;
+        height: 180%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+        transform: rotate(18deg);
+        animation: shimmer 5.8s ease-in-out infinite;
+        opacity: .6;
+        pointer-events:none;
+      }
+      @keyframes shimmer{
+        0%{transform: translateX(-40%) rotate(18deg);}
+        50%{transform: translateX(140%) rotate(18deg);}
+        100%{transform: translateX(-40%) rotate(18deg);}
+      }
+      .tip-h{
+        font-weight: 850;
+        font-size: 13px;
+        color: rgba(17,24,39,.86);
+        margin-bottom: 6px;
+      }
+      .tip-t{
+        color: rgba(17,24,39,.62);
+        font-size: 13px;
+        line-height: 1.55;
       }
     </style>
     """,
@@ -238,20 +216,14 @@ st.markdown(
 )
 
 # =========================
-# Header (updated title)
+# Header (center, no extra persona text)
 # =========================
 st.markdown(
     """
-    <div class="brand-wrap fadein">
-      <div class="brand-line">
-        <div class="brand-left">
-          <div class="brand-title">清小知</div>
-          <div class="brand-sub">高校通知模拟器 · 发布前的表达检查与改写</div>
-        </div>
-        <div class="brand-badge">
-          <span class="brand-dot"></span>
-          <span>Draft → Review → Publish</span>
-        </div>
+    <div class="hero">
+      <div class="brand-title">清小知</div>
+      <div style="margin-top:10px;">
+        <div class="brand-subtitle">高校通知小助手｜让通知更容易被理解</div>
       </div>
     </div>
     """,
@@ -477,7 +449,7 @@ def highlight_text_html(raw_text: str, phrases: list[str]) -> str:
         safe_p = html.escape(p)
         safe = safe.replace(safe_p, f"<mark class='hl'>{safe_p}</mark>")
 
-    return f"<div class='card fadein' style='line-height:1.8;font-size:15px;'>{safe}</div>"
+    return f"<div class='card' style='line-height:1.8;font-size:15px;'>{safe}</div>"
 
 
 def render_overview(risk_score: int, risk_level: str, summary: str):
@@ -487,7 +459,7 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
     with k1:
         st.markdown(
             f"""
-            <div class="card fadein">
+            <div class="card">
               <div class="kpi-label">风险分数</div>
               <div class="kpi-value">{pct}</div>
               <div class="bar"><div style="width:{pct}%;"></div></div>
@@ -499,7 +471,7 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
         label = ("低" if risk_level == "LOW" else ("中" if risk_level == "MEDIUM" else "高"))
         st.markdown(
             f"""
-            <div class="card fadein">
+            <div class="card">
               <div class="kpi-label">风险等级</div>
               <div class="kpi-value2">{risk_level}</div>
               <div class="muted" style="margin-top:8px;">{label}风险</div>
@@ -510,7 +482,7 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
     with k3:
         st.markdown(
             f"""
-            <div class="card fadein">
+            <div class="card">
               <div class="kpi-label">结论</div>
               <div style="font-size:16px;font-weight:780;margin-top:10px;line-height:1.5;">
                 {html.escape(summary)}
@@ -521,35 +493,12 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
         )
 
 
-def render_brand_illustration():
-    svg = r"""
-<svg width="220" height="64" viewBox="0 0 520 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M18 120C92 92 174 84 260 84C346 84 428 92 502 120" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M118 114V52L168 26L218 52V114" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M140 114V68H196V114" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M152 80H184" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="330" cy="78" r="8" fill="rgba(16,185,129,.85)"/>
-  <path d="M330 88V112" stroke="rgba(16,185,129,.85)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M318 100H342" stroke="rgba(16,185,129,.85)" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="372" cy="82" r="8" fill="rgba(16,185,129,.80)"/>
-  <path d="M372 92V114" stroke="rgba(16,185,129,.80)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M360 104H384" stroke="rgba(16,185,129,.80)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M292 34C330 18 380 18 420 34" stroke="rgba(17,24,39,.28)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M300 50C342 36 382 36 430 50" stroke="rgba(17,24,39,.20)" stroke-width="2" stroke-linecap="round"/>
-</svg>
-""".strip()
-
-    # 关键：用 data URI 放进 <img>，避免 Streamlit inline SVG 被当文本
-    svg_data = "data:image/svg+xml;utf8," + svg.replace("#", "%23").replace("\n", "")
-
+def render_minimal_tip():
     st.markdown(
-        f"""
-        <div class="illu fadein">
-          <div class="illu-inner">
-            <div class="illu-tag">Campus notice · Draft</div>
-            <img src="{svg_data}" style="opacity:.82; height:64px;" />
-            <div class="illu-tag">Review · Publish</div>
-          </div>
+        """
+        <div class="tip">
+          <div class="tip-h">写作建议（可忽略）</div>
+          <div class="tip-t">尽量补齐：时间窗口 / 执行范围 / 可替代方案 / 咨询渠道。信息越完整，越不容易被误读。</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -563,7 +512,7 @@ def render_rewrite_fulltext(rw: dict):
 
     st.markdown(
         f"""
-        <div class="card fadein">
+        <div class="card">
           <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
             <div style="font-weight:850; font-size:14px; line-height:1.25;">{html.escape(str(rw.get("name","")))}</div>
             <div class="pill">预测风险 {html.escape(str(pr))}</div>
@@ -579,7 +528,7 @@ def render_rewrite_fulltext(rw: dict):
     safe_text = html.escape(str(txt)).replace("\n", "<br>")
     st.markdown(
         f"""
-        <div class="card fadein" style="margin-top:12px; font-size:15px; line-height:1.78;">
+        <div class="card" style="margin-top:12px; font-size:15px; line-height:1.78;">
           {safe_text}
         </div>
         """,
@@ -601,7 +550,7 @@ if "last_inputs" not in st.session_state:
 left, right = st.columns([3, 2], gap="large")
 
 with left:
-    st.markdown('<div class="section-h fadein">待发布文本</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-h">待发布文本</div>', unsafe_allow_html=True)
     text = st.text_area(
         " ",
         height=260,
@@ -610,11 +559,11 @@ with left:
         value=st.session_state.last_inputs.get("text", ""),
     )
 
-    # Decorative illustration card (no low textual reminders)
-    render_brand_illustration()
+    # Minimal, safe, premium tip (no svg/img)
+    render_minimal_tip()
 
 with right:
-    st.markdown('<div class="section-h fadein">场景与受众</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-h">场景与受众</div>', unsafe_allow_html=True)
 
     scenario = st.selectbox(
         "发布场景",
@@ -630,7 +579,7 @@ with right:
         index=0,
     )
 
-    st.markdown("**受众画像（高校版）**")
+    st.markdown("**受众画像**")
     c1, c2 = st.columns(2)
     with c1:
         grade = st.selectbox("年级/阶段", ["新生", "大二/大三", "大四/毕业班", "研究生", "混合群体"], index=1)
@@ -674,31 +623,25 @@ current_text = st.session_state.last_inputs.get("text", "")
 if not result:
     st.info("请输入文本并点击「分析并生成改写」。")
 else:
-    render_overview(
-        int(result.get("risk_score", 0)),
-        result.get("risk_level", "LOW"),
-        result.get("summary", ""),
-    )
+    render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    # ---- Rewrite area: show full text directly ----
-    st.markdown('<div class="section-h fadein">改写建议</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
 
     rewrites = result.get("rewrites", []) or []
     while len(rewrites) < 3:
         rewrites.append({"name": f"版本{len(rewrites)+1}", "pred_risk_score": "-", "text": "", "why": ""})
     rewrites = rewrites[:3]
 
-    name_to_rw = {(rw.get("name") or "").strip(): rw for rw in rewrites}
+    name_to_rw = { (rw.get("name") or "").strip(): rw for rw in rewrites }
     tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
     for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
         rw = name_to_rw.get(tname, {"name": tname, "pred_risk_score": "-", "text": "", "why": ""})
-        rw["name"] = tname  # hard enforce tab name
+        rw["name"] = tname
         with tab:
             render_rewrite_fulltext(rw)
 
-    # ---- Detailed analysis: risk + emotion ----
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     with st.expander("查看详细分析", expanded=False):
         tab1, tab2 = st.tabs(["风险点", "学生情绪"])
@@ -735,7 +678,7 @@ else:
                     intensity = clamp01(e.get("intensity", 0))
                     st.markdown(
                         f"""
-                        <div class='card fadein'>
+                        <div class='card'>
                           <div>
                             <span class='badge'>{html.escape(str(e.get('group','群体')))}</span>
                             <span class='badge'>情绪：{html.escape(str(e.get('sentiment','')))}</span>
