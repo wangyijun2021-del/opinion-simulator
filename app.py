@@ -522,32 +522,32 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
 
 
 def render_brand_illustration():
-    # Decorative brand illustration (no explanatory text)
+    svg = r"""
+<svg width="220" height="64" viewBox="0 0 520 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M18 120C92 92 174 84 260 84C346 84 428 92 502 120" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M118 114V52L168 26L218 52V114" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M140 114V68H196V114" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M152 80H184" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="330" cy="78" r="8" fill="rgba(16,185,129,.85)"/>
+  <path d="M330 88V112" stroke="rgba(16,185,129,.85)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M318 100H342" stroke="rgba(16,185,129,.85)" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="372" cy="82" r="8" fill="rgba(16,185,129,.80)"/>
+  <path d="M372 92V114" stroke="rgba(16,185,129,.80)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M360 104H384" stroke="rgba(16,185,129,.80)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M292 34C330 18 380 18 420 34" stroke="rgba(17,24,39,.28)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M300 50C342 36 382 36 430 50" stroke="rgba(17,24,39,.20)" stroke-width="2" stroke-linecap="round"/>
+</svg>
+""".strip()
+
+    # 关键：用 data URI 放进 <img>，避免 Streamlit inline SVG 被当文本
+    svg_data = "data:image/svg+xml;utf8," + svg.replace("#", "%23").replace("\n", "")
+
     st.markdown(
-        """
+        f"""
         <div class="illu fadein">
           <div class="illu-inner">
             <div class="illu-tag">Campus notice · Draft</div>
-            <svg width="220" height="64" viewBox="0 0 520 150" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:.82;">
-              <!-- horizon -->
-              <path d="M18 120C92 92 174 84 260 84C346 84 428 92 502 120" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linecap="round"/>
-              <!-- building -->
-              <path d="M118 114V52L168 26L218 52V114" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linejoin="round"/>
-              <path d="M140 114V68H196V114" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linejoin="round"/>
-              <path d="M152 80H184" stroke="rgba(59,130,246,.85)" stroke-width="3" stroke-linecap="round"/>
-              <!-- abstract students -->
-              <circle cx="330" cy="78" r="8" fill="rgba(16,185,129,.85)"/>
-              <path d="M330 88V112" stroke="rgba(16,185,129,.85)" stroke-width="3" stroke-linecap="round"/>
-              <path d="M318 100H342" stroke="rgba(16,185,129,.85)" stroke-width="3" stroke-linecap="round"/>
-
-              <circle cx="372" cy="82" r="8" fill="rgba(16,185,129,.80)"/>
-              <path d="M372 92V114" stroke="rgba(16,185,129,.80)" stroke-width="3" stroke-linecap="round"/>
-              <path d="M360 104H384" stroke="rgba(16,185,129,.80)" stroke-width="3" stroke-linecap="round"/>
-
-              <!-- subtle sky lines -->
-              <path d="M292 34C330 18 380 18 420 34" stroke="rgba(17,24,39,.28)" stroke-width="2" stroke-linecap="round"/>
-              <path d="M300 50C342 36 382 36 430 50" stroke="rgba(17,24,39,.20)" stroke-width="2" stroke-linecap="round"/>
-            </svg>
+            <img src="{svg_data}" style="opacity:.82; height:64px;" />
             <div class="illu-tag">Review · Publish</div>
           </div>
         </div>
