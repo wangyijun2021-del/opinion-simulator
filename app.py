@@ -553,6 +553,78 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
         )
 
 def tip_block():
+    def format_notice_for_chat(raw: str) -> str:
+    """把模型输出的 markdown/奇怪符号，整理成更像群通知的排版。"""
+    if not raw:
+        return ""
+
+    s = raw.replace("\r\n", "\n").replace("\r", "\n")
+
+    # 1) 去掉类似 "\1." 这种转义
+    s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)
+
+    # 2) 去掉 markdown 加粗/代码符号 **xx** / __xx__ / `xx`
+    s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
+    s = re.sub(r"__(.*?)__", r"\1", s)
+    s = re.sub(r"`(.*?)`", r"\1", s)
+
+    # 3) 把以 - 开头的行改成更像群消息的项目符号
+    s = re.sub(r"(?m)^\s*-\s+", "· ", s)
+
+    # 4) 让“1. / 2、/ 3)”这类编号自动分段（前面插入空行）
+    s = re.sub(r"(?m)^(?=\d+[\.\、\)])", "\n", s)
+    s = re.sub(r"\n{3,}", "\n\n", s).strip()
+
+    return s
+
+
+def add_emojis_smart(text: str) -> str:
+    """在合适位置加少量 emoji（不刷屏），更像校园通知。"""
+    if not text:
+        return ""
+
+    lines = text.split("\n")
+    out = []
+
+    for i, line in enumerate(lines):
+        L = line.strip()
+        if not L:
+            out.append("")
+            continue
+
+        # 避免重复加：如果行首已经有 emoji/符号，就少动
+        has_emoji_prefix = bool(re.match(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]", L))
+
+        if not has_emoji_prefix:
+            # 开场问候
+            if i <= 1 and re.search(r"(同学|大家|各位)", L):
+                L = "👋 " + L
+
+            # 时间/地点/联系/提醒/材料/步骤
+            if re.search(r"(时间|今晚|明天|上午|下午|晚上|\d{1,2}[:：]\d{2})", L) and "⏰" not in L:
+                L = "⏰ " + L
+            if re.search(r"(地点|位置|教室|楼|宿舍|会议室)", L) and "📍" not in L:
+                L = "📍 " + L
+            if re.search(r"(咨询|联系|沟通|电话|微信|邮箱)", L) and "☎️" not in L:
+                L = "☎️ " + L
+            if re.search(r"(注意|提醒|请勿|禁止|务必|重要)", L) and "⚠️" not in L:
+                L = "⚠️ " + L
+            if re.search(r"(材料|附件|表格|申请|提交)", L) and "📄" not in L:
+                L = "📄 " + L
+            if re.search(r"(步骤|流程|操作|请按|依次)", L) and "✅" not in L:
+                L = "✅ " + L
+
+        out.append(L)
+
+    # 控制密度：把连续“多重 emoji 前缀”稍微去重（保留第一个）
+    cleaned = []
+    for line in out:
+        line = re.sub(r"^(?:👋\s*)?(?:⏰\s*)?(?:📍\s*)?(?:☎️\s*)?(?:⚠️\s*)?(?:📄\s*)?(?:✅\s*)?",
+                      lambda m: (m.group(0).split()[0] + " ") if m.group(0).strip() else "",
+                      line)
+        cleaned.append(line)
+
+    return "\n".join(cleaned).strip()
     st.markdown(
         """
         <div class="tip">
@@ -595,27 +667,49 @@ def clipboard_copy_button(text: str, key: str):
         """,
         height=52,
     )
+    
+def emoji_toggle_button(tab_name: str):
+    """
+    tab_name: "更清晰"/"更安抚"/"更可执行"
+    """
+    k = f"emoji_on_{tab_name}"
+    if k not in st.session_state:
+        st.session_state[k] = False
 
+    label = "取消emoji" if st.session_state[k] else "自动添加emoji"
+    if st.button(label, key=f"emoji_btn_{tab_name}", use_container_width=True):
+        st.session_state[k] = not st.session_state[k]
+        st.rerun()
+        
 def pretty_notice(text: str) -> str:
     """
-    轻量排版：把常见的“1. 2. 3.”、“【】”、“：”等处理得更清晰。
-    不改变语义，只让结构更好读。
+    轻量排版：把模型常见的 Markdown 痕迹与奇怪转义清掉，
+    让文本更像日常群通知：分段清晰、序号正常、不出现 \1. / **。
     """
     if not text:
         return ""
     t = text.strip()
 
-    # 统一全角空格、过多空行
+    # 1) 去掉常见 Markdown 粗体/斜体符号
+    t = re.sub(r"\*\*(.*?)\*\*", r"\1", t)
+    t = re.sub(r"\*(.*?)\*", r"\1", t)
+
+    # 2) 去掉模型偶尔生成的反斜杠转义：\1.  \-  \*
+    t = re.sub(r"\\(?=\d+[\.\、])", "", t)   # \1. -> 1.
+    t = re.sub(r"\\(?=[\-\*•])", "", t)     # \- -> -
+
+    # 3) 统一过多空行
     t = re.sub(r"\n{3,}", "\n\n", t)
 
-    # 让 1. 2. 3. 变成更分明的段落
-    t = re.sub(r"\n(\d+)[\.\、]\s*", r"\n\n\\1. ", t)
-    t = re.sub(r"(^|\n)(\d+)[\.\、]\s*", r"\\1\n\n\\2. ", t)
+    # 4) 让 “1. / 2. / 3.” 这种条目变成“前面空一行”的段落
+    t = re.sub(r"(^|\n)\s*(\d+)[\.\、]\s*", r"\1\n\n\2. ", t)
 
-    # 常见“【信息咨询】”前加空行
+    # 5) 让 “- / •” 这种列表项也更像段落
+    t = re.sub(r"(^|\n)\s*[-•]\s*", r"\1\n- ", t)
+
+    # 6) 常见“【信息咨询】”前加空行（更像群通知结构）
     t = re.sub(r"\n?【", "\n\n【", t)
 
-    # 冒号后如果是长句，保持，但加一点点换行提示：不强拆
     return t.strip()
 
 def add_emoji_to_notice(text: str) -> str:
@@ -873,17 +967,12 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
             unsafe_allow_html=True,
         )
 
-        # Emoji toggle for this tab
+        # --- Emoji toggle state ---
         emoji_key = f"emoji_on_{tname}"
-        cA, cB = st.columns([1, 1], gap="medium")
+        if emoji_key not in st.session_state:
+            st.session_state[emoji_key] = False
 
-        with cB:
-            # Secondary button: toggle emoji
-            label = "自动添加emoji" if not st.session_state[emoji_key] else "取消emoji"
-            if st.button(label, key=f"btn_emoji_{tname}", type="secondary", use_container_width=True):
-                st.session_state[emoji_key] = not st.session_state[emoji_key]
-
-        # Render rewrite text with clearer layout
+        # --- Render rewrite text with cleaner layout ---
         raw_txt = rw.get("text", "") or ""
         cleaned = pretty_notice(raw_txt)
         final_txt = add_emoji_to_notice(cleaned) if st.session_state[emoji_key] else cleaned
@@ -898,8 +987,17 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
             unsafe_allow_html=True,
         )
 
-        with cA:
-            clipboard_copy_button(final_txt, key=f"{tname}")
+        # --- Buttons UNDER the text, side-by-side, consistent size ---
+        b1, b2 = st.columns(2, gap="medium")
+
+        with b1:
+             clipboard_copy_button(final_txt, key=f"{tname}")
+
+        with b2:
+             label = "取消emoji" if st.session_state[emoji_key] else "自动添加emoji"
+            if st.button(label, key=f"btn_emoji_{tname}", type="secondary", use_container_width=True):
+            st.session_state[emoji_key] = not st.session_state[emoji_key]
+            st.rerun()
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
