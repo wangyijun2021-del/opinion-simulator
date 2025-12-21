@@ -2,6 +2,7 @@ import os
 import re
 import json
 import html
+import hashlib
 import requests
 import streamlit as st
 
@@ -52,7 +53,7 @@ st.markdown(
       }
 
       .card {
-        background: rgba(255,255,255,.90);
+        background: rgba(255,255,255,.92);
         border-radius: 18px;
         padding: 16px 18px;
         box-shadow: 0 10px 30px rgba(0,0,0,.06);
@@ -76,7 +77,6 @@ st.markdown(
       .bar {height: 10px; border-radius: 999px; background: rgba(17,24,39,.08); overflow: hidden; margin-top: 10px;}
       .bar > div {height: 100%; border-radius: 999px; background: rgba(59,130,246,.86);}
 
-      /* Highlight */
       mark.hl {
         background: rgba(245, 158, 11, 0.25);
         color: inherit;
@@ -84,7 +84,6 @@ st.markdown(
         border-radius: .35em;
       }
 
-      /* Compact text */
       .clamp2{
         display:-webkit-box;
         -webkit-line-clamp:2;
@@ -106,27 +105,31 @@ st.markdown(
         white-space:nowrap;
       }
 
+      /* Brand illustration strip: NO text, just visual */
+      .brand-strip{
+        margin-top: 14px;
+        border-radius: 18px;
+        background:
+          radial-gradient(900px 160px at 30% 20%, rgba(59,130,246,.10), transparent 60%),
+          radial-gradient(900px 160px at 70% 30%, rgba(16,185,129,.08), transparent 60%),
+          rgba(255,255,255,.80);
+        border: 1px solid rgba(0,0,0,.04);
+        box-shadow: 0 10px 30px rgba(0,0,0,.05);
+        padding: 10px 14px;
+        overflow: hidden;
+      }
+      .brand-strip svg{ display:block; width:100%; height:96px; opacity:0.95; }
+
       .footnote {
         color: rgba(17,24,39,.48);
         font-size: 12px;
         margin-top: 18px;
       }
 
-      /* Illustration container */
-      .illu {
-        margin-top: 14px;
-        padding: 16px;
-        border-radius: 16px;
-        background: rgba(59,130,246,0.04);
-        border: 1px solid rgba(0,0,0,.04);
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
-      .illu-text {
-        color: rgba(17,24,39,.55);
-        font-size: 13px;
-        line-height: 1.55;
+      /* Make code blocks look premium */
+      pre {
+        border-radius: 14px !important;
+        border: 1px solid rgba(0,0,0,.06) !important;
       }
     </style>
     """,
@@ -180,7 +183,6 @@ if not DEEPSEEK_API_KEY:
 def safe_extract_json(text: str):
     if not text:
         return None, "empty_response"
-
     cleaned = re.sub(r"```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
     cleaned = cleaned.replace("```", "").strip()
 
@@ -203,16 +205,10 @@ def safe_extract_json(text: str):
 
 
 def call_deepseek(system_prompt: str, user_prompt: str, model: str = "deepseek-chat"):
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
     payload = {
         "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
+        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
         "temperature": 0.3,
     }
     r = requests.post(API_URL, headers=headers, json=payload, timeout=90)
@@ -338,7 +334,6 @@ def analyze(text: str, scenario: str, profile: dict):
         for n in ["更清晰", "更安抚", "更可执行"]:
             if buckets[n] is not None:
                 fixed.append(buckets[n])
-
         if len(fixed) < 3:
             for rw in rewrites:
                 if rw not in fixed:
@@ -423,39 +418,146 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
         )
 
 
-def render_student_illustration():
-    # Cute but restrained: campus vibe (no emoji, no cartoon faces)
-    st.markdown(
-        """
-        <div class="illu">
-          <svg width="120" height="86" viewBox="0 0 240 172" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:.70;">
-            <!-- ground -->
-            <path d="M18 146C52 132 88 126 120 126C152 126 188 132 222 146" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
-            <!-- simple building -->
-            <path d="M52 138V78L92 56L132 78V138" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round"/>
-            <path d="M70 138V96H114V138" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round"/>
-            <path d="M78 106H106" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
-            <!-- small figures (abstract) -->
-            <circle cx="162" cy="108" r="6" fill="#10B981"/>
-            <path d="M162 116V132" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
-            <path d="M154 124H170" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="190" cy="112" r="6" fill="#10B981"/>
-            <path d="M190 120V134" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
-            <path d="M182 128H198" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
-            <!-- sky lines -->
-            <path d="M146 44C168 30 190 28 214 36" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
-            <path d="M150 58C176 46 196 46 220 54" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.35"/>
-          </svg>
-          <div class="illu-text">
-            把通知当作一次“对话”来设计：明确边界、解释原因、给出选项与渠道，往往比强调命令更有效。
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+# -------------------------
+# Brand illustration system (no text, consistent style)
+# -------------------------
+def _svg_strip_dorm():
+    return """
+    <svg viewBox="0 0 1100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 88C140 64 246 56 355 56C464 56 570 64 670 88C780 106 900 106 1060 78"
+            stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+      <path d="M125 92V44L215 18L305 44V92" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round" opacity="0.85"/>
+      <path d="M155 92V58H275V92" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round" opacity="0.85"/>
+      <path d="M175 68H255" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+      <circle cx="455" cy="64" r="8" fill="#10B981" opacity="0.75"/>
+      <path d="M455 74V96" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+      <path d="M441 84H469" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+      <circle cx="510" cy="66" r="8" fill="#10B981" opacity="0.65"/>
+      <path d="M510 76V96" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+      <path d="M496 86H524" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+      <path d="M760 26C820 10 890 12 960 34" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
+      <path d="M780 44C840 32 900 34 980 52" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.18"/>
+    </svg>
+    """
 
 
-def render_rewrite_fulltext(rw: dict):
+def _svg_strip_exam():
+    return """
+    <svg viewBox="0 0 1100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M60 86C190 60 320 52 440 56C560 60 680 78 820 86C940 92 1020 88 1060 78"
+            stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M160 24H360V88H160V24Z" stroke="#3B82F6" stroke-width="3" opacity="0.85"/>
+      <path d="M190 42H330" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+      <path d="M190 58H310" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+      <path d="M190 74H290" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M480 30C520 18 560 18 600 30" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+      <path d="M540 30V88" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+      <circle cx="760" cy="62" r="10" fill="#10B981" opacity="0.55"/>
+      <path d="M760 74V92" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M742 84H778" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M850 26C910 10 980 12 1040 34" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.22"/>
+    </svg>
+    """
+
+
+def _svg_strip_event():
+    return """
+    <svg viewBox="0 0 1100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 88C180 70 300 56 420 56C540 56 660 70 790 88C920 106 1000 104 1060 90"
+            stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M170 84V44C170 32 180 22 192 22H314C326 22 336 32 336 44V84"
+            stroke="#3B82F6" stroke-width="3" opacity="0.85"/>
+      <path d="M198 38H308" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+      <path d="M198 54H290" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+      <path d="M520 30L560 76L600 30" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+      <circle cx="560" cy="82" r="7" fill="#10B981" opacity="0.55"/>
+      <path d="M720 34C780 18 840 18 900 34" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.18"/>
+      <path d="M740 50C800 36 860 36 940 52" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.13"/>
+    </svg>
+    """
+
+
+def _svg_strip_policy():
+    return """
+    <svg viewBox="0 0 1100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M60 86C200 60 340 50 470 56C600 62 720 84 860 88C980 92 1030 86 1060 76"
+            stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M170 22H340V92H170V22Z" stroke="#3B82F6" stroke-width="3" opacity="0.85"/>
+      <path d="M200 42H310" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+      <path d="M200 60H290" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+      <path d="M200 78H270" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M520 28C560 16 600 16 640 28" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+      <path d="M540 40H620" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+      <path d="M560 52H600" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+      <path d="M820 30C880 12 950 14 1030 40" stroke="#111827" stroke-width="2" stroke-linecap="round" opacity="0.18"/>
+    </svg>
+    """
+
+
+def get_brand_svg_for_scenario(scenario: str) -> str:
+    # map to consistent brand illustrations
+    mapping = {
+        "宿舍与安全管理通知": _svg_strip_dorm,
+        "课程/考试/成绩相关通知": _svg_strip_exam,
+        "校内活动/讲座报名通知": _svg_strip_event,
+        "奖助学金/资助政策通知": _svg_strip_policy,
+        "纪律处分/违纪处理通告": _svg_strip_policy,
+        "疫情/卫生/公共安全通知": _svg_strip_dorm,
+        "其他（通用高校公告）": _svg_strip_event,
+    }
+    fn = mapping.get(scenario, _svg_strip_event)
+    return fn()
+
+
+def render_brand_strip(scenario: str):
+    svg = get_brand_svg_for_scenario(scenario)
+    st.markdown(f"<div class='brand-strip'>{svg}</div>", unsafe_allow_html=True)
+
+
+# -------------------------
+# Publish-ready formatting
+# -------------------------
+def normalize_text_for_render(text: str) -> str:
+    return (text or "").strip().replace("\r\n", "\n").replace("\r", "\n")
+
+
+def format_for_channel(rewrite_text: str, channel: str, scenario: str) -> str:
+    """
+    Turn the rewrite into ready-to-send layouts.
+    Keep it deterministic and simple (product-ish).
+    """
+    t = normalize_text_for_render(rewrite_text)
+
+    # If model outputs a long paragraph, keep it as-is but add structure where appropriate
+    # We'll only add wrappers, not rewrite semantics.
+    if channel == "班群版":
+        # short title + body + optional closing line
+        title = f"【通知】{scenario}"
+        body = t
+        return f"{title}\n\n{body}"
+
+    if channel == "公告栏版":
+        # more formal: title + sections if possible
+        title = f"{scenario}通知"
+        return f"{title}\n\n{t}\n"
+
+    if channel == "邮件版":
+        subject = f"主题：{scenario}通知"
+        greeting = "各位同学："
+        closing = "此致\n敬礼"
+        return f"{subject}\n\n{greeting}\n{t}\n\n{closing}\n（学生工作部门）"
+
+    if channel == "短信版":
+        # compress: take first ~120-160 chars, keep key info
+        s = re.sub(r"\s+", " ", t)
+        if len(s) > 160:
+            s = s[:160].rstrip() + "…"
+        return s
+
+    return t
+
+
+def render_rewrite_block(name: str, rw: dict, scenario: str, key_prefix: str):
     pr = rw.get("pred_risk_score", "-")
     why = rw.get("why", "")
     txt = rw.get("text", "")
@@ -464,7 +566,7 @@ def render_rewrite_fulltext(rw: dict):
         f"""
         <div class="card">
           <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-            <div style="font-weight:850; font-size:14px; line-height:1.25;">{html.escape(str(rw.get("name","")))}</div>
+            <div style="font-weight:850; font-size:14px; line-height:1.25;">{html.escape(name)}</div>
             <div class="pill">预测风险 {html.escape(str(pr))}</div>
           </div>
           <div class="muted clamp3" style="margin-top:10px; font-size:13px; line-height:1.45;">
@@ -475,15 +577,28 @@ def render_rewrite_fulltext(rw: dict):
         unsafe_allow_html=True,
     )
 
-    # Full text shown directly (no expander)
-    safe_text = html.escape(str(txt)).replace("\n", "<br>")
-    st.markdown(
-        f"""
-        <div class="card" style="margin-top:12px; font-size:15px; line-height:1.78;">
-          {safe_text}
-        </div>
-        """,
-        unsafe_allow_html=True,
+    # Publish-ready layouts
+    channel = st.segmented_control(
+        "发布排版",
+        options=["班群版", "邮件版", "公告栏版", "短信版"],
+        default="班群版",
+        key=f"{key_prefix}_channel_{name}",
+    )
+
+    out = format_for_channel(txt, channel, scenario)
+
+    # Display as code (premium, copy-friendly)
+    st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+    st.code(out, language="text")
+
+    # Download
+    st.download_button(
+        "下载为文本",
+        data=out.encode("utf-8"),
+        file_name=f"{scenario}-{name}-{channel}.txt",
+        mime="text/plain",
+        use_container_width=False,
+        key=f"{key_prefix}_dl_{name}",
     )
 
 
@@ -493,7 +608,7 @@ def render_rewrite_fulltext(rw: dict):
 if "result" not in st.session_state:
     st.session_state.result = None
 if "last_inputs" not in st.session_state:
-    st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}}
+    st.session_state.last_inputs = {"text": "", "scenario": "宿舍与安全管理通知", "profile": {}}
 
 # =========================
 # Input layout
@@ -509,9 +624,6 @@ with left:
         label_visibility="collapsed",
         value=st.session_state.last_inputs.get("text", ""),
     )
-
-    # 👇 Add illustration to fill empty area (requested)
-    render_student_illustration()
 
 with right:
     st.markdown('<div class="section-h">场景与受众</div>', unsafe_allow_html=True)
@@ -541,15 +653,19 @@ with right:
 
     custom = st.text_input("画像补充（可选）", placeholder="例如：近期对宿舍检查较敏感，担心被通报。")
 
-    profile = {
-        "grade": grade,
-        "role": role,
-        "gender": gender,
-        "sensitivity": sensitivity,
-        "custom": custom,
-    }
+    profile = {"grade": grade, "role": role, "gender": gender, "sensitivity": sensitivity, "custom": custom}
 
     analyze_btn = st.button("分析并生成改写", type="primary", use_container_width=True)
+
+# --- Brand illustration strip under input, no text (requested) ---
+# Put it under the left input area visually, but we need scenario value which is in right col.
+# So render it after both columns, aligned to left width using container trick:
+st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+cL, cR = st.columns([3, 2], gap="large")
+with cL:
+    render_brand_strip(scenario)
+with cR:
+    pass
 
 st.divider()
 
@@ -567,6 +683,7 @@ if analyze_btn:
 
 result = st.session_state.result
 current_text = st.session_state.last_inputs.get("text", "")
+current_scenario = st.session_state.last_inputs.get("scenario", scenario)
 
 # =========================
 # Output
@@ -578,21 +695,21 @@ else:
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    # ---- Rewrite area: show full text directly (requested) ----
+    # ---- Rewrite area: publish-ready layouts ----
     st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
 
     rewrites = result.get("rewrites", []) or []
     while len(rewrites) < 3:
         rewrites.append({"name": f"版本{len(rewrites)+1}", "pred_risk_score": "-", "text": "", "why": ""})
     rewrites = rewrites[:3]
+    name_to_rw = {(rw.get("name") or "").strip(): rw for rw in rewrites}
 
-    name_to_rw = { (rw.get("name") or "").strip(): rw for rw in rewrites }
     tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
     for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
         rw = name_to_rw.get(tname, {"name": tname, "pred_risk_score": "-", "text": "", "why": ""})
-        rw["name"] = tname  # hard enforce tab name
+        rw["name"] = tname
         with tab:
-            render_rewrite_fulltext(rw)
+            render_rewrite_block(tname, rw, current_scenario, key_prefix="rw")
 
     # ---- Detailed analysis: risk + emotion ----
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
