@@ -36,32 +36,20 @@ st.markdown(
       header {visibility: hidden;}
 
       /* Header */
-      .hero {
-        text-align:center;
-        padding: 8px 0 14px 0;
-        position: relative;
-      }
+      .hero { text-align:center; padding: 8px 0 14px 0; position: relative; }
       .hero-title{
-        font-size: 42px;
-        font-weight: 900;
-        letter-spacing: -0.03em;
-        color: rgba(15, 23, 42, .95);
-        margin: 0;
+        font-size: 42px; font-weight: 900; letter-spacing: -0.03em;
+        color: rgba(15, 23, 42, .95); margin: 0;
         animation: floatIn .7s ease-out both;
         text-shadow: 0 10px 35px rgba(37,99,235,.18);
       }
       .hero-pill{
-        display:inline-flex;
-        align-items:center;
-        gap:10px;
-        padding: 10px 16px;
-        border-radius: 999px;
+        display:inline-flex; align-items:center; gap:10px;
+        padding: 10px 16px; border-radius: 999px;
         border: 1px solid rgba(2,6,23,.06);
         background: rgba(255,255,255,.75);
         box-shadow: 0 10px 30px rgba(2,6,23,.06);
-        color: rgba(51,65,85,.90);
-        font-size: 14px;
-        margin-top: 10px;
+        color: rgba(51,65,85,.90); font-size: 14px; margin-top: 10px;
         animation: glow 3.2s ease-in-out infinite;
       }
       .hero-dot{
@@ -69,19 +57,12 @@ st.markdown(
         background: rgba(37,99,235,.85);
         box-shadow: 0 0 0 6px rgba(37,99,235,.12);
       }
-      @keyframes floatIn{
-        from{ transform: translateY(8px); opacity: 0; }
-        to{ transform: translateY(0); opacity: 1; }
-      }
-      @keyframes glow{
-        0%,100% { box-shadow: 0 10px 30px rgba(2,6,23,.06); }
-        50% { box-shadow: 0 18px 40px rgba(37,99,235,.12); }
-      }
+      @keyframes floatIn{ from{ transform: translateY(8px); opacity: 0; } to{ transform: translateY(0); opacity: 1; } }
+      @keyframes glow{ 0%,100% { box-shadow: 0 10px 30px rgba(2,6,23,.06); } 50% { box-shadow: 0 18px 40px rgba(37,99,235,.12); } }
 
       /* Section title */
       .section-h{
-        font-size: 19px;
-        font-weight: 900;
+        font-size: 19px; font-weight: 900;
         margin: 0.35rem 0 1.0rem 0;
         border-left: 4px solid rgba(37,99,235,.55);
         padding-left: 12px;
@@ -97,7 +78,6 @@ st.markdown(
         border: 1px solid rgba(2,6,23,.05);
       }
       .muted {color: rgba(51,65,85,.70);}
-      .mono {font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
 
       /* KPI */
       .kpi-label {color: rgba(51,65,85,.60); font-size: 12px; letter-spacing: .06em;}
@@ -107,34 +87,18 @@ st.markdown(
       .bar > div {height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(37,99,235,.95), rgba(59,130,246,.75));}
 
       /* Highlight */
-      mark.hl {
-        background: rgba(59, 130, 246, 0.22);
-        color: inherit;
-        padding: 0 .18em;
-        border-radius: .35em;
-      }
+      mark.hl { background: rgba(59, 130, 246, 0.22); color: inherit; padding: 0 .18em; border-radius: .35em; }
 
-      /* Tips (smaller + tighter) */
+      /* Tips */
       .tip{
-        margin-top: 10px;
-        padding: 12px 14px;
+        margin-top: 10px; padding: 12px 14px;
         border-radius: 16px;
         background: rgba(37,99,235,0.055);
         border: 1px solid rgba(2,6,23,.05);
         box-shadow: 0 10px 26px rgba(2,6,23,.04);
       }
-      .tip-title{
-        font-weight: 900;
-        color: rgba(15,23,42,.90);
-        margin-bottom: 6px;
-        font-size: 13px;
-      }
-      .tip-text{
-        color: rgba(51,65,85,.76);
-        line-height: 1.65;
-        white-space: pre-line;
-        font-size: 12.5px;
-      }
+      .tip-title{ font-weight: 900; color: rgba(15,23,42,.90); margin-bottom: 6px; font-size: 13px; }
+      .tip-text{ color: rgba(51,65,85,.76); line-height: 1.65; white-space: pre-line; font-size: 12.5px; }
 
       /* Blue tags */
       .blue-tag{
@@ -150,7 +114,7 @@ st.markdown(
         font-weight: 700;
       }
 
-      /* Chat bubble (single clean white bubble) */
+      /* Chat bubble */
       .bubble{
         margin-top:10px;
         background: rgba(255,255,255,.94);
@@ -176,7 +140,7 @@ st.markdown(
         transform: rotate(45deg);
       }
 
-      /* Risk point list (compact) */
+      /* Risk item */
       .rp-item{
         padding: 12px 12px;
         border-radius: 14px;
@@ -185,19 +149,11 @@ st.markdown(
         margin-bottom: 10px;
       }
 
-      /* Tabs: evenly distributed but not too edge */
-      .stTabs [data-baseweb="tab-list"]{
-        justify-content: space-around;
-        padding: 0 28px;
-      }
-      .stTabs [data-baseweb="tab"]{
-        font-size: 15px;
-        font-weight: 900;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-      }
+      /* Tabs */
+      .stTabs [data-baseweb="tab-list"]{ justify-content: space-around; padding: 0 28px; }
+      .stTabs [data-baseweb="tab"]{ font-size: 15px; font-weight: 900; padding-left: 0 !important; padding-right: 0 !important; }
 
-      /* Primary button: cool + interactive */
+      /* Primary button */
       div.stButton > button[kind="primary"]{
         width: 100%;
         border: 0 !important;
@@ -213,9 +169,7 @@ st.markdown(
         filter: brightness(1.02);
         box-shadow: 0 22px 60px rgba(37,99,235,.28) !important;
       }
-      div.stButton > button[kind="primary"]:active{
-        transform: translateY(0px) scale(.99);
-      }
+      div.stButton > button[kind="primary"]:active{ transform: translateY(0px) scale(.99); }
 
       /* Loading */
       .loading{
@@ -247,7 +201,7 @@ st.markdown(
         50%{ opacity:1; transform: translateY(-2px); }
       }
 
-      /* Secondary action button (emoji) */
+      /* Secondary action button */
       div.stButton > button[kind="secondary"]{
         width: 100%;
         border-radius: 14px !important;
@@ -553,78 +507,6 @@ def render_overview(risk_score: int, risk_level: str, summary: str):
         )
 
 def tip_block():
-    def format_notice_for_chat(raw: str) -> str:
-    """把模型输出的 markdown/奇怪符号，整理成更像群通知的排版。"""
-    if not raw:
-        return ""
-
-    s = raw.replace("\r\n", "\n").replace("\r", "\n")
-
-    # 1) 去掉类似 "\1." 这种转义
-    s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)
-
-    # 2) 去掉 markdown 加粗/代码符号 **xx** / __xx__ / `xx`
-    s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
-    s = re.sub(r"__(.*?)__", r"\1", s)
-    s = re.sub(r"`(.*?)`", r"\1", s)
-
-    # 3) 把以 - 开头的行改成更像群消息的项目符号
-    s = re.sub(r"(?m)^\s*-\s+", "· ", s)
-
-    # 4) 让“1. / 2、/ 3)”这类编号自动分段（前面插入空行）
-    s = re.sub(r"(?m)^(?=\d+[\.\、\)])", "\n", s)
-    s = re.sub(r"\n{3,}", "\n\n", s).strip()
-
-    return s
-
-
-def add_emojis_smart(text: str) -> str:
-    """在合适位置加少量 emoji（不刷屏），更像校园通知。"""
-    if not text:
-        return ""
-
-    lines = text.split("\n")
-    out = []
-
-    for i, line in enumerate(lines):
-        L = line.strip()
-        if not L:
-            out.append("")
-            continue
-
-        # 避免重复加：如果行首已经有 emoji/符号，就少动
-        has_emoji_prefix = bool(re.match(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]", L))
-
-        if not has_emoji_prefix:
-            # 开场问候
-            if i <= 1 and re.search(r"(同学|大家|各位)", L):
-                L = "👋 " + L
-
-            # 时间/地点/联系/提醒/材料/步骤
-            if re.search(r"(时间|今晚|明天|上午|下午|晚上|\d{1,2}[:：]\d{2})", L) and "⏰" not in L:
-                L = "⏰ " + L
-            if re.search(r"(地点|位置|教室|楼|宿舍|会议室)", L) and "📍" not in L:
-                L = "📍 " + L
-            if re.search(r"(咨询|联系|沟通|电话|微信|邮箱)", L) and "☎️" not in L:
-                L = "☎️ " + L
-            if re.search(r"(注意|提醒|请勿|禁止|务必|重要)", L) and "⚠️" not in L:
-                L = "⚠️ " + L
-            if re.search(r"(材料|附件|表格|申请|提交)", L) and "📄" not in L:
-                L = "📄 " + L
-            if re.search(r"(步骤|流程|操作|请按|依次)", L) and "✅" not in L:
-                L = "✅ " + L
-
-        out.append(L)
-
-    # 控制密度：把连续“多重 emoji 前缀”稍微去重（保留第一个）
-    cleaned = []
-    for line in out:
-        line = re.sub(r"^(?:👋\s*)?(?:⏰\s*)?(?:📍\s*)?(?:☎️\s*)?(?:⚠️\s*)?(?:📄\s*)?(?:✅\s*)?",
-                      lambda m: (m.group(0).split()[0] + " ") if m.group(0).strip() else "",
-                      line)
-        cleaned.append(line)
-
-    return "\n".join(cleaned).strip()
     st.markdown(
         """
         <div class="tip">
@@ -636,7 +518,8 @@ def add_emojis_smart(text: str) -> str:
     )
 
 def clipboard_copy_button(text: str, key: str):
-    safe = json.dumps(text)  # safe JS string
+    """复制按钮（JS clipboard）"""
+    safe = json.dumps(text, ensure_ascii=False)
     components.html(
         f"""
         <div style="margin-top:2px;">
@@ -667,86 +550,76 @@ def clipboard_copy_button(text: str, key: str):
         """,
         height=52,
     )
-    
-def emoji_toggle_button(tab_name: str):
-    """
-    tab_name: "更清晰"/"更安抚"/"更可执行"
-    """
-    k = f"emoji_on_{tab_name}"
-    if k not in st.session_state:
-        st.session_state[k] = False
 
-    label = "取消emoji" if st.session_state[k] else "自动添加emoji"
-    if st.button(label, key=f"emoji_btn_{tab_name}", use_container_width=True):
-        st.session_state[k] = not st.session_state[k]
-        st.rerun()
-        
-def pretty_notice(text: str) -> str:
+def pretty_notice(raw: str) -> str:
     """
-    轻量排版：把模型常见的 Markdown 痕迹与奇怪转义清掉，
-    让文本更像日常群通知：分段清晰、序号正常、不出现 \1. / **。
+    把模型输出的 markdown/奇怪转义，整理成更像群通知的排版：
+    - 去掉 \1. 这种转义
+    - 去掉 **加粗**、__加粗__、`代码`
+    - 列表/编号分段更清楚
     """
+    if not raw:
+        return ""
+
+    s = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    # 1) 去掉类似 "\1." "\2、" "\3)" 这种反斜杠转义
+    s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)
+
+    # 2) 去掉 markdown 痕迹（粗体/下划线/代码）
+    s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
+    s = re.sub(r"__(.*?)__", r"\1", s)
+    s = re.sub(r"`([^`]+)`", r"\1", s)
+
+    # 3) 把 "- xxx" 变成更像群消息的 “· xxx”
+    s = re.sub(r"(?m)^\s*-\s+", "· ", s)
+
+    # 4) 编号行前插入空行
+    s = re.sub(r"(?m)^(?=\d+[\.\、\)])", "\n", s)
+
+    # 5) 常见 “【信息咨询】/【申诉与咨询】” 前加空行
+    s = re.sub(r"\n?【", "\n\n【", s)
+
+    # 6) 合并多余空行
+    s = re.sub(r"\n{3,}", "\n\n", s).strip()
+
+    return s
+
+def add_emojis_smart(text: str) -> str:
+    """在合适位置加少量 emoji（不刷屏），更像校园通知。"""
     if not text:
         return ""
-    t = text.strip()
 
-    # 1) 去掉常见 Markdown 粗体/斜体符号
-    t = re.sub(r"\*\*(.*?)\*\*", r"\1", t)
-    t = re.sub(r"\*(.*?)\*", r"\1", t)
+    lines = text.split("\n")
+    out = []
 
-    # 2) 去掉模型偶尔生成的反斜杠转义：\1.  \-  \*
-    t = re.sub(r"\\(?=\d+[\.\、])", "", t)   # \1. -> 1.
-    t = re.sub(r"\\(?=[\-\*•])", "", t)     # \- -> -
+    for i, line in enumerate(lines):
+        L = line.strip()
+        if not L:
+            out.append("")
+            continue
 
-    # 3) 统一过多空行
-    t = re.sub(r"\n{3,}", "\n\n", t)
+        has_emoji_prefix = bool(re.match(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]", L))
+        if not has_emoji_prefix:
+            if i <= 1 and re.search(r"(同学|大家|各位)", L):
+                L = "👋 " + L
 
-    # 4) 让 “1. / 2. / 3.” 这种条目变成“前面空一行”的段落
-    t = re.sub(r"(^|\n)\s*(\d+)[\.\、]\s*", r"\1\n\n\2. ", t)
+            if re.search(r"(时间|今晚|明天|上午|下午|晚上|\d{1,2}[:：]\d{2})", L):
+                L = "⏰ " + L
+            elif re.search(r"(地点|位置|教室|楼|宿舍|会议室)", L):
+                L = "📍 " + L
+            elif re.search(r"(咨询|联系|沟通|电话|微信|邮箱)", L):
+                L = "☎️ " + L
+            elif re.search(r"(注意|提醒|请勿|禁止|务必|重要)", L):
+                L = "⚠️ " + L
+            elif re.search(r"(材料|附件|表格|申请|提交)", L):
+                L = "📄 " + L
+            elif re.search(r"(步骤|流程|操作|请按|依次)", L):
+                L = "✅ " + L
 
-    # 5) 让 “- / •” 这种列表项也更像段落
-    t = re.sub(r"(^|\n)\s*[-•]\s*", r"\1\n- ", t)
+        out.append(L)
 
-    # 6) 常见“【信息咨询】”前加空行（更像群通知结构）
-    t = re.sub(r"\n?【", "\n\n【", t)
-
-    return t.strip()
-
-def add_emoji_to_notice(text: str) -> str:
-    """
-    可选：给通知加“克制的 emoji”，偏高校通知风格。
-    """
-    if not text:
-        return ""
-    t = text.strip()
-
-    # 标题/开头
-    if not t.startswith(("📣", "📌", "🔔")):
-        t = "📣 " + t
-
-    # 常见结构点
-    replacements = [
-        ("时间", "🕒 时间"),
-        ("地点", "📍 地点"),
-        ("范围", "🎯 范围"),
-        ("对象", "🎯 对象"),
-        ("要求", "✅ 要求"),
-        ("注意", "⚠️ 注意"),
-        ("咨询", "💬 咨询"),
-        ("联系", "☎️ 联系"),
-        ("请", "请"),  # 不动
-    ]
-    # 只做“第一次出现”的轻量增强（避免满屏表情）
-    for a, b in replacements:
-        if a in t and b not in t:
-            t = t.replace(a, b, 1)
-
-    # 数字条目更清晰
-    t = re.sub(r"(\n\s*1\.)", r"\n\n1️⃣.", t)
-    t = re.sub(r"(\n\s*2\.)", r"\n\n2️⃣.", t)
-    t = re.sub(r"(\n\s*3\.)", r"\n\n3️⃣.", t)
-
-    return t.strip()
+    return "\n".join(out).strip()
 
 # =========================
 # Session state
@@ -758,7 +631,6 @@ if "last_inputs" not in st.session_state:
 if "is_loading" not in st.session_state:
     st.session_state.is_loading = False
 
-# per-tab emoji state
 for k in ["更清晰", "更安抚", "更可执行"]:
     st.session_state.setdefault(f"emoji_on_{k}", False)
 
@@ -771,7 +643,7 @@ with left:
     st.markdown('<div class="section-h">待发布文本</div>', unsafe_allow_html=True)
     text = st.text_area(
         " ",
-        height=290,  # slightly taller to align with right panel
+        height=290,
         placeholder="粘贴或输入通知/公告/制度文本…",
         label_visibility="collapsed",
         value=st.session_state.last_inputs.get("text", ""),
@@ -812,7 +684,7 @@ with right:
     btn_area = st.empty()
 
 # =========================
-# Run (loading-state button)
+# Run button
 # =========================
 clicked = False
 if st.session_state.is_loading:
@@ -850,298 +722,6 @@ current_text = st.session_state.last_inputs.get("text", "")
 # =========================
 # Output
 # =========================
-if not result:
-    st.info("请输入文本并点击「一键发布预测」。")
-    st.stop()
-
-render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
-
-# ---- Highlight shown directly (under output area) ----
-issues = result.get("issues", []) or []
-phrases = [(it.get("evidence") or "").strip() for it in issues if (it.get("evidence") or "").strip()]
-
-if current_text.strip() and phrases:
-    st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="section-h">原文标注</div>', unsafe_allow_html=True)
-    st.markdown(highlight_text_html(current_text, phrases), unsafe_allow_html=True)
-
-st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
-
-# =========================
-# Emotion Prediction (two columns)
-# =========================
-st.markdown('<div class="section-h">情绪预测</div>', unsafe_allow_html=True)
-
-risk_col, emo_col = st.columns([1.1, 1], gap="large")
-
-with risk_col:
-    st.markdown("**风险点**")
-    issues = result.get("issues", []) or []
-    if not issues:
-        st.info("未识别到明显风险点。")
-    else:
-        options = [f"{i+1}. {it.get('title','(未命名)')}" for i, it in enumerate(issues)]
-        selected = st.radio(" ", options=options, label_visibility="collapsed", key="risk_pick")
-
-        idx = int(selected.split(".")[0]) - 1
-        it = issues[idx]
-
-        # 触发片段改为蓝色强调
-        st.markdown(
-            f"""
-            <div class='rp-item'>
-              <div style="font-weight:900; margin-bottom:8px; color:rgba(37,99,235,1);">
-                触发片段：{html.escape(str(it.get('evidence','')))}
-              </div>
-              <div style="margin-top:6px; color:rgba(15,23,42,.88); line-height:1.75;">
-                <b>原因：</b>{html.escape(str(it.get('why','')))}
-              </div>
-              <div style="margin-top:8px; color:rgba(15,23,42,.88); line-height:1.75;">
-                <b>建议：</b>{html.escape(str(it.get('rewrite_tip','')))}
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-with emo_col:
-    st.markdown("**学生情绪**")
-    emos = result.get("student_emotions", []) or []
-    if not emos:
-        st.info("未生成情绪画像。")
-    else:
-        for e in emos:
-            emo = (e.get("sentiment") or "").strip()
-            emoji = EMOJI_MAP.get(emo, "💭")
-            intensity = clamp01(e.get("intensity", 0))
-            group = e.get("group", "群体")
-            comment = e.get("sample_comment", "")
-
-            st.markdown(
-                f"""
-                <div style="margin-bottom:16px;">
-                  <span class="blue-tag">{html.escape(str(group))}</span>
-                  <span class="blue-tag">情绪：{html.escape(str(emo))} {emoji}</span>
-                  <span class="blue-tag">强度：{intensity:.2f}</span>
-                  <div class="bubble">{html.escape(str(comment))}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
-
-# =========================
-# Rewrite suggestions (FULL WIDTH, not inside a column)
-# =========================
-st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
-
-rewrites = result.get("rewrites", []) or []
-while len(rewrites) < 3:
-    rewrites.append({"name": f"版本{len(rewrites)+1}", "pred_risk_score": "-", "text": "", "why": ""})
-rewrites = rewrites[:3]
-
-name_to_rw = {(rw.get("name") or "").strip(): rw for rw in rewrites}
-tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
-
-for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
-    rw = name_to_rw.get(tname, {"name": tname, "pred_risk_score": "-", "text": "", "why": ""})
-    rw["name"] = tname
-
-    with tab:
-        pr = rw.get("pred_risk_score", "-")
-        why = rw.get("why", "")
-
-        st.markdown(
-            f"""
-            <div class="card">
-              <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-                <div style="font-weight:900; font-size:16px; line-height:1.25;">{html.escape(tname)}</div>
-                <span class="blue-tag">预测风险 {html.escape(str(pr))}</span>
-              </div>
-              <div class="muted" style="margin-top:10px; font-size:13px; line-height:1.55;">
-                {html.escape(str(why))}
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # --- Emoji toggle state ---
-        emoji_key = f"emoji_on_{tname}"
-        if emoji_key not in st.session_state:
-            st.session_state[emoji_key] = False
-
-        # --- Render rewrite text with cleaner layout ---
-        raw_txt = rw.get("text", "") or ""
-        cleaned = pretty_notice(raw_txt)
-        final_txt = add_emoji_to_notice(cleaned) if st.session_state[emoji_key] else cleaned
-
-        safe_text = html.escape(final_txt).replace("\n", "<br>")
-        st.markdown(
-            f"""
-            <div class="card" style="margin-top:12px; font-size:15px; line-height:1.85;">
-              {safe_text}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-def tip_block():
-    st.markdown(
-        """
-        <div class="tip">
-          <div class="tip-title">通知小贴士</div>
-          <div class="tip-text">撰写通知时应尽量涵盖时间窗口 / 执行范围 / 可替代方案 / 咨询渠道。<br>信息越完整，越不容易被误读噢💙</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def clipboard_copy_button(text: str, key: str):
-    """复制按钮（JS clipboard）"""
-    safe = json.dumps(text, ensure_ascii=False)
-    components.html(
-        f"""
-        <div style="margin-top:10px;">
-          <button id="btn-{key}" style="
-            width:100%;
-            border:1px solid rgba(37,99,235,.22);
-            background: rgba(37,99,235,.07);
-            color: rgba(37,99,235,1);
-            padding:12px 12px;
-            border-radius:14px;
-            font-weight:900;
-            font-size:15px;
-            cursor:pointer;
-          ">复制该版本</button>
-        </div>
-        <script>
-          const btn = document.gets = document.getElementById("btn-{key}");
-          const btn2 = document.getElementById("btn-{key}");
-          btn2.addEventListener("click", async () => {{
-            try {{
-              await navigator.clipboard.writeText({safe});
-              btn2.innerText = "已复制 ✓";
-              setTimeout(() => btn2.innerText = "复制该版本", 1200);
-            }} catch (e) {{
-              btn2.innerText = "复制失败（请手动全选复制）";
-              setTimeout(() => btn2.innerText = "复制该版本", 1600);
-            }}
-          }});
-        </script>
-        """,
-        height=64,
-    )
-
-
-def pretty_notice(raw: str) -> str:
-    """
-    把模型输出的 markdown/奇怪转义，整理成更像群通知的排版：
-    - 去掉 \1. 这种转义
-    - 去掉 **加粗**、__加粗__、`代码`
-    - 列表/编号分段更清楚
-    - 不刷屏、不改变语义
-    """
-    if not raw:
-        return ""
-
-    s = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
-
-    # 1) 去掉类似 "\1." "\2、" "\3)" 这种反斜杠转义
-    s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)
-
-    # 2) 去掉 markdown 痕迹（粗体/下划线/代码）
-    s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
-    s = re.sub(r"__(.*?)__", r"\1", s)
-    s = re.sub(r"`([^`]+)`", r"\1", s)
-
-    # 3) 把 "- xxx" 变成更像群消息的 “· xxx”
-    s = re.sub(r"(?m)^\s*-\s+", "· ", s)
-
-    # 4) 让编号行前面自动空一行： 1. / 2、/ 3)
-    s = re.sub(r"(?m)^(?=\d+[\.\、\)])", "\n", s)
-
-    # 5) 常见 “【信息咨询】/【申诉与咨询】” 前加空行
-    s = re.sub(r"\n?【", "\n\n【", s)
-
-    # 6) 合并多余空行
-    s = re.sub(r"\n{3,}", "\n\n", s).strip()
-
-    return s
-
-
-def add_emojis_smart(text: str) -> str:
-    """在合适位置加少量 emoji（不刷屏），更像校园通知。"""
-    if not text:
-        return ""
-
-    lines = text.split("\n")
-    out = []
-
-    for i, line in enumerate(lines):
-        L = line.strip()
-        if not L:
-            out.append("")
-            continue
-
-        # 行首已是 emoji 就不强加
-        has_emoji_prefix = bool(re.match(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]", L))
-
-        if not has_emoji_prefix:
-            # 开场招呼
-            if i <= 1 and re.search(r"(同学|大家|各位)", L):
-                L = "👋 " + L
-            # 关键语义
-            if re.search(r"(时间|今晚|明天|上午|下午|晚上|\d{{1,2}}[:：]\d{{2}})", L):
-                L = "⏰ " + L
-            elif re.search(r"(地点|位置|教室|楼|宿舍|会议室)", L):
-                L = "📍 " + L
-            elif re.search(r"(咨询|联系|沟通|电话|微信|邮箱)", L):
-                L = "☎️ " + L
-            elif re.search(r"(注意|提醒|请勿|禁止|务必|重要)", L):
-                L = "⚠️ " + L
-            elif re.search(r"(材料|附件|表格|申请|提交)", L):
-                L = "📄 " + L
-            elif re.search(r"(步骤|流程|操作|请按|依次)", L):
-                L = "✅ " + L
-
-        out.append(L)
-
-    return "\n".join(out).strip()
-
-
-# =========================
-# Session state（你之前没有，这里补上）
-# =========================
-if "result" not in st.session_state:
-    st.session_state.result = None
-if "last_inputs" not in st.session_state:
-    st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}}
-if "is_loading" not in st.session_state:
-    st.session_state.is_loading = False
-
-# 每个改写 tab 的 emoji 开关
-for _k in ["更清晰", "更安抚", "更可执行"]:
-    st.session_state.setdefault(f"emoji_on_{_k}", False)
-
-
-# =========================
-# （下面开始是你原来的 UI 主体：保持与你之前版本一致）
-# 如果你上面已经写过 input/output，这里不要重复。
-# 你需要确保：这里往下是“你原来就有的那段 UI 代码”
-# =========================
-
-# ====== 你原来在这里开始：st.divider() / result = ... / render_overview ... ======
-# ⚠️ 如果你文件里这段已经在 tip_block 上面出现过，请删掉重复的。
-# 下面我给你一个“从结果展示开始”的标准版本（和你之前一致）
-
-
-st.divider()
-
-result = st.session_state.result
-current_text = st.session_state.last_inputs.get("text", "")
-
 if not result:
     st.info("请输入文本并点击「一键发布预测」。")
     st.stop()
@@ -1272,12 +852,9 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
             unsafe_allow_html=True,
         )
 
-        # ✅ 按钮放在“改写文本下方”，左右并列，字号一致
         b1, b2 = st.columns(2, gap="medium")
-
         with b1:
             clipboard_copy_button(final_txt, key=f"copy_{tname}")
-
         with b2:
             label = "取消emoji" if st.session_state[emoji_key] else "自动添加emoji"
             if st.button(label, key=f"btn_emoji_{tname}", type="secondary", use_container_width=True):
@@ -1288,5 +865,3 @@ st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
     unsafe_allow_html=True,
 )
-
-
