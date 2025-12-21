@@ -201,25 +201,6 @@ st.markdown(
         50%{ opacity:1; transform: translateY(-2px); }
       }
 
-      /* Secondary action button (emoji) — match "复制该版本" */
-      div.stButton > button[kind="secondary"]{
-        width: 100%;
-        border-radius: 14px !important;
-        padding: 10px 12px !important;
-        font-weight: 900 !important;
-        font-size: 15px !important;
-
-        border: 1px solid rgba(37,99,235,.25) !important;
-        background: rgba(37,99,235,.08) !important;
-        color: rgba(37,99,235,1) !important;
-
-        transition: transform .15s ease, filter .2s ease;
-      }
-      div.stButton > button[kind="secondary"]:hover{
-        transform: translateY(-1px);
-        filter: brightness(1.02);
-      }
-
       /* Footnote */
       .footnote {
         color: rgba(51,65,85,.55);
@@ -534,6 +515,7 @@ def clipboard_copy_button(text: str, key: str):
             padding:10px 12px;
             border-radius:14px;
             font-weight:900;
+            font-size:15px;
             cursor:pointer;
           ">复制该版本</button>
         </div>
@@ -553,15 +535,12 @@ def clipboard_copy_button(text: str, key: str):
         """,
         height=52,
     )
-def js_action_button(label: str, key: str) -> bool:
-    """
-    画一个和“复制该版本”同款样式的按钮。
-    点击后用 st.session_state["_js_clicked_<key>"]=True 通知 Python。
-    """
-    flag = f"_js_clicked_{key}"
-    if flag not in st.session_state:
-        st.session_state[flag] = False
 
+def js_html_button(label: str, action_param: str, key: str):
+    """
+    同款样式 HTML 按钮：点击后在 URL query 里写入 action_param=1 并刷新，
+    Python 端用 st.experimental_get_query_params() 捕获并处理。
+    """
     components.html(
         f"""
         <div style="margin-top:2px;">
@@ -580,25 +559,26 @@ def js_action_button(label: str, key: str) -> bool:
         <script>
           const btn = document.getElementById("btn-{key}");
           btn.addEventListener("click", () => {{
-            const params = new URLSearchParams(window.location.search);
-            params.set("{flag}", "1");
-            window.location.search = params.toString();
+            const url = new URL(window.location.href);
+            url.searchParams.set("{action_param}", "1");
+            window.location.href = url.toString();
           }});
         </script>
         """,
         height=52,
     )
 
-    # 通过 query param 判断是否刚刚点了这个按钮
-    qp = st.query_params
-    if qp.get(flag) == "1":
-        # 清掉 query param，避免刷新反复触发
-        try:
-            st.query_params.pop(flag)
-        except Exception:
-            pass
+def consume_query_flag(flag: str) -> bool:
+    """
+    检查 URL query 是否有 flag=1；若有则消费掉（清掉）并返回 True。
+    用 experimental_* 是为了兼容更多 Streamlit 版本。
+    """
+    qp = st.experimental_get_query_params()
+    if qp.get(flag, ["0"])[0] == "1":
+        # 清掉 flag，避免重复触发
+        qp.pop(flag, None)
+        st.experimental_set_query_params(**qp)
         return True
-
     return False
 
 def pretty_notice(raw: str) -> str:
@@ -612,27 +592,14 @@ def pretty_notice(raw: str) -> str:
         return ""
 
     s = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
-
-    # 1) 去掉类似 "\1." "\2、" "\3)" 这种反斜杠转义
     s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)
-
-    # 2) 去掉 markdown 痕迹（粗体/下划线/代码）
     s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
     s = re.sub(r"__(.*?)__", r"\1", s)
     s = re.sub(r"`([^`]+)`", r"\1", s)
-
-    # 3) 把 "- xxx" 变成更像群消息的 “· xxx”
     s = re.sub(r"(?m)^\s*-\s+", "· ", s)
-
-    # 4) 编号行前插入空行
     s = re.sub(r"(?m)^(?=\d+[\.\、\)])", "\n", s)
-
-    # 5) 常见 “【信息咨询】/【申诉与咨询】” 前加空行
     s = re.sub(r"\n?【", "\n\n【", s)
-
-    # 6) 合并多余空行
     s = re.sub(r"\n{3,}", "\n\n", s).strip()
-
     return s
 
 def add_emojis_smart(text: str) -> str:
@@ -680,7 +647,6 @@ if "last_inputs" not in st.session_state:
     st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}}
 if "is_loading" not in st.session_state:
     st.session_state.is_loading = False
-
 for k in ["更清晰", "更安抚", "更可执行"]:
     st.session_state.setdefault(f"emoji_on_{k}", False)
 
@@ -902,14 +868,22 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
             unsafe_allow_html=True,
         )
 
+        # ---------- Buttons (both HTML, same style) ----------
         b1, b2 = st.columns(2, gap="medium")
+
         with b1:
             clipboard_copy_button(final_txt, key=f"copy_{tname}")
+
         with b2:
-            label = "取消emoji" if st.session_state[emoji_key] else "添加emoji"
-            if st.button(label, key=f"btn_emoji_{tname}", type="secondary", use_container_width=True):
+            # 1) 先检测是否点了“添加/取消emoji”（通过 query param）
+            action_flag = f"toggle_emoji_{tname}"
+            if consume_query_flag(action_flag):
                 st.session_state[emoji_key] = not st.session_state[emoji_key]
                 st.rerun()
+
+            # 2) 再渲染同款 HTML 按钮
+            label = "取消emoji" if st.session_state[emoji_key] else "添加emoji"
+            js_html_button(label=label, action_param=action_flag, key=f"emoji_{tname}")
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
