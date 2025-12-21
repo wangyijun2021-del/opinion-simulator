@@ -139,29 +139,31 @@ st.markdown(
         border: 1px solid rgba(37,99,235,.18);
       }
 
-      /* Chat bubble */
-      .bubble{
-        margin-top:8px;
-        background:rgba(37,99,235,.06);
-        border: 1px solid rgba(37,99,235,.12);
-        border-radius:16px;
-        padding:10px 12px;
-        font-size:14px;
-        line-height:1.65;
-        color:rgba(15,23,42,.90);
-        position: relative;
-      }
-      .bubble:before{
-        content:"";
-        position:absolute;
-        left:14px;
-        top:-7px;
-        width:12px; height:12px;
-        background:rgba(37,99,235,.06);
-        border-left:1px solid rgba(37,99,235,.12);
-        border-top:1px solid rgba(37,99,235,.12);
-        transform: rotate(45deg);
-      }
+      /* Chat bubble (single white bubble, not stitched) */
+.bubble{
+  margin-top:10px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(37,99,235,.14);
+  border-radius: 18px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(15,23,42,.92);
+  box-shadow: 0 12px 28px rgba(2,6,23,.06);
+  position: relative;
+}
+.bubble:before{
+  content:"";
+  position:absolute;
+  left:18px;
+  top:-8px;
+  width:14px;
+  height:14px;
+  background: rgba(255,255,255,.92);
+  border-left: 1px solid rgba(37,99,235,.14);
+  border-top: 1px solid rgba(37,99,235,.14);
+  transform: rotate(45deg);
+}
 
       /* Risk point list (compact) */
       .rp-item{
@@ -679,33 +681,44 @@ else:
 
     st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
-    # ---- Emotion Prediction (NOT collapsed, two columns) ----
-    st.markdown('<div class="section-h">情绪预测</div>', unsafe_allow_html=True)
+# ---- Emotion Prediction (NOT collapsed, two columns) ----
+st.markdown('<div class="section-h">情绪预测</div>', unsafe_allow_html=True)
 
-    risk_col, emo_col = st.columns([1.1, 1], gap="large")
+risk_col, emo_col = st.columns([1.1, 1], gap="large")
 
-    with risk_col:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
+with risk_col:
+    with st.container():
         st.markdown("**风险点**")
 
+        issues = result.get("issues", []) or []
         if not issues:
             st.info("未识别到明显风险点。")
         else:
             options = [f"{i+1}. {it.get('title','(未命名)')}" for i, it in enumerate(issues)]
-            selected = st.radio(" ", options=options, label_visibility="collapsed")
+            selected = st.radio(" ", options=options, label_visibility="collapsed", key="risk_pick")
+
             idx = int(selected.split(".")[0]) - 1
             it = issues[idx]
 
-            st.markdown("<div class='rp-item'>", unsafe_allow_html=True)
-            st.markdown(f"**触发片段**：{it.get('evidence','')}")
-            st.markdown(f"**原因**：{it.get('why','')}")
-            st.markdown(f"**建议**：{it.get('rewrite_tip','')}")
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div class='rp-item'>
+                  <div style="font-weight:900; margin-bottom:8px; color:rgba(15,23,42,.92);">
+                    触发片段：{html.escape(str(it.get('evidence','')))}
+                  </div>
+                  <div style="margin-top:6px; color:rgba(15,23,42,.88); line-height:1.75;">
+                    <b>原因：</b>{html.escape(str(it.get('why','')))}
+                  </div>
+                  <div style="margin-top:8px; color:rgba(15,23,42,.88); line-height:1.75;">
+                    <b>建议：</b>{html.escape(str(it.get('rewrite_tip','')))}
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with emo_col:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
+with emo_col:
+    with st.container():
         st.markdown("**学生情绪**")
 
         emos = result.get("student_emotions", []) or []
@@ -721,7 +734,7 @@ else:
 
                 st.markdown(
                     f"""
-                    <div style="margin-bottom:14px;">
+                    <div style="margin-bottom:16px;">
                       <span class="blue-tag">{html.escape(str(group))}</span>
                       <span class="blue-tag">情绪：{html.escape(str(emo))} {emoji}</span>
                       <span class="blue-tag">强度：{intensity:.2f}</span>
