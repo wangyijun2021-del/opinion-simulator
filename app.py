@@ -16,12 +16,11 @@ st.set_page_config(
 )
 
 # =========================
-# Styles (cool + premium)
+# Styles
 # =========================
 st.markdown(
     """
     <style>
-      /* Background must apply in Streamlit */
       [data-testid="stAppViewContainer"]{
         background:
           radial-gradient(1200px 700px at 20% 0%, rgba(59,130,246,.16), transparent 60%),
@@ -36,9 +35,8 @@ st.markdown(
       header {visibility: hidden;}
 
       /* Header */
-      .hero { text-align:center; padding: 8px 0 14px 0; position: relative; }
+      .hero { text-align:center; padding: 10px 0 16px 0; position: relative; }
 
-      /* Title: gradient + dynamic */
       .hero-title{
         font-size: 44px;
         font-weight: 950;
@@ -60,14 +58,19 @@ st.markdown(
         transform: translateY(-2px) scale(1.01);
         filter: saturate(1.15);
       }
-
-      .hero-pill{
-        display:inline-flex; align-items:center; gap:10px;
-        padding: 10px 16px; border-radius: 999px;
+      .hero-sub{
+        margin-top: 10px;
+        font-size: 14px;
+        font-weight: 800;
+        color: rgba(51,65,85,.82);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 999px;
         border: 1px solid rgba(2,6,23,.06);
         background: rgba(255,255,255,.75);
         box-shadow: 0 10px 30px rgba(2,6,23,.06);
-        color: rgba(51,65,85,.90); font-size: 14px; margin-top: 10px;
         animation: glow 3.2s ease-in-out infinite;
       }
       .hero-dot{
@@ -75,6 +78,7 @@ st.markdown(
         background: rgba(37,99,235,.85);
         box-shadow: 0 0 0 6px rgba(37,99,235,.12);
       }
+
       @keyframes floatIn{ from{ transform: translateY(8px); opacity: 0; } to{ transform: translateY(0); opacity: 1; } }
       @keyframes glow{ 0%,100% { box-shadow: 0 10px 30px rgba(2,6,23,.06); } 50% { box-shadow: 0 18px 40px rgba(37,99,235,.12); } }
       @keyframes titleGlow{
@@ -82,7 +86,6 @@ st.markdown(
         50%{ text-shadow: 0 18px 60px rgba(14,165,233,.22); }
       }
 
-      /* Section title */
       .section-h{
         font-size: 19px; font-weight: 900;
         margin: 0.35rem 0 1.0rem 0;
@@ -91,7 +94,6 @@ st.markdown(
         color: rgba(15,23,42,.92);
       }
 
-      /* Card */
       .card {
         background: rgba(255,255,255,.88);
         border-radius: 18px;
@@ -101,17 +103,14 @@ st.markdown(
       }
       .muted {color: rgba(51,65,85,.70);}
 
-      /* KPI */
       .kpi-label {color: rgba(51,65,85,.60); font-size: 12px; letter-spacing: .06em;}
       .kpi-value {font-size: 34px; font-weight: 900; margin-top: 6px; color: rgba(15,23,42,.92);}
       .kpi-value2 {font-size: 22px; font-weight: 900; margin-top: 10px; color: rgba(15,23,42,.92);}
       .bar {height: 10px; border-radius: 999px; background: rgba(15,23,42,.08); overflow: hidden; margin-top: 10px;}
       .bar > div {height: 100%; border-radius: 999px;}
 
-      /* Highlight */
       mark.hl { background: rgba(59, 130, 246, 0.22); color: inherit; padding: 0 .18em; border-radius: .35em; }
 
-      /* Tips */
       .tip{
         margin-top: 10px; padding: 12px 14px;
         border-radius: 16px;
@@ -122,7 +121,6 @@ st.markdown(
       .tip-title{ font-weight: 900; color: rgba(15,23,42,.90); margin-bottom: 6px; font-size: 13px; }
       .tip-text{ color: rgba(51,65,85,.76); line-height: 1.65; white-space: pre-line; font-size: 12.5px; }
 
-      /* Blue tags */
       .blue-tag{
         display:inline-block;
         padding:4px 10px;
@@ -136,7 +134,6 @@ st.markdown(
         font-weight: 700;
       }
 
-      /* Chat bubble */
       .bubble{
         margin-top:10px;
         background: rgba(255,255,255,.94);
@@ -162,7 +159,6 @@ st.markdown(
         transform: rotate(45deg);
       }
 
-      /* Risk item */
       .rp-item{
         padding: 12px 12px;
         border-radius: 14px;
@@ -171,11 +167,9 @@ st.markdown(
         margin-bottom: 10px;
       }
 
-      /* Tabs */
       .stTabs [data-baseweb="tab-list"]{ justify-content: space-around; padding: 0 28px; }
       .stTabs [data-baseweb="tab"]{ font-size: 15px; font-weight: 900; padding-left: 0 !important; padding-right: 0 !important; }
 
-      /* Primary button */
       div.stButton > button[kind="primary"]{
         width: 100%;
         border: 0 !important;
@@ -193,7 +187,6 @@ st.markdown(
       }
       div.stButton > button[kind="primary"]:active{ transform: translateY(0px) scale(.99); }
 
-      /* Loading */
       .loading{
         display:flex;
         align-items:center;
@@ -223,7 +216,6 @@ st.markdown(
         50%{ opacity:1; transform: translateY(-2px); }
       }
 
-      /* Footnote */
       .footnote {
         color: rgba(51,65,85,.55);
         font-size: 12px;
@@ -236,13 +228,14 @@ st.markdown(
 )
 
 # =========================
-# Header
+# Header (subtitle under title)
 # =========================
 st.markdown(
     """
     <div class="hero">
       <div class="hero-title">清小知</div>
-      <div class="hero-pill">
+      <div style="height:6px;"></div>
+      <div class="hero-sub">
         <span class="hero-dot"></span>
         <span>高校通知小助手｜让通知更容易被理解</span>
       </div>
@@ -474,10 +467,10 @@ def highlight_text_html(raw_text: str, phrases: list[str]) -> str:
 
 def _bar_gradient_by_level(risk_level: str) -> str:
     if risk_level == "LOW":
-        return "linear-gradient(90deg, rgba(34,197,94,.95), rgba(16,185,129,.75))"   # green
+        return "linear-gradient(90deg, rgba(34,197,94,.95), rgba(16,185,129,.75))"
     if risk_level == "MEDIUM":
-        return "linear-gradient(90deg, rgba(234,179,8,.95), rgba(251,191,36,.75))"  # yellow
-    return "linear-gradient(90deg, rgba(239,68,68,.95), rgba(244,63,94,.75))"       # red
+        return "linear-gradient(90deg, rgba(234,179,8,.95), rgba(251,191,36,.75))"
+    return "linear-gradient(90deg, rgba(239,68,68,.95), rgba(244,63,94,.75))"
 
 def render_overview(risk_score: int, risk_level: str, summary: str):
     pct = max(0, min(100, int(risk_score)))
@@ -569,23 +562,19 @@ def clipboard_copy_button(text: str, key: str, label: str = "复制该版本"):
     )
 
 def _consume_query_flag(flag: str) -> bool:
-    # Streamlit query_params behaves like a dict-like proxy
     qp = st.query_params
     v = qp.get(flag, None)
     hit = False
     if v is not None:
-        # v may be str or list[str]
         if isinstance(v, list):
             hit = (len(v) > 0 and v[0] == "1")
         else:
             hit = (str(v) == "1")
 
     if hit:
-        # Clear just this flag to avoid repeated triggering on refresh
         try:
             qp.pop(flag)
         except Exception:
-            # fallback: clear all (rare)
             try:
                 qp.clear()
             except Exception:
@@ -593,9 +582,7 @@ def _consume_query_flag(flag: str) -> bool:
     return hit
 
 def js_toggle_button(label: str, key: str) -> bool:
-    """
-    HTML 同款按钮：点击后通过 query param 通知 Python 侧 rerun。
-    """
+    # key 必须是 ASCII（这是本次“点了没反应”的关键修复点）
     flag = f"act_{key}"
 
     components.html(
@@ -632,49 +619,31 @@ def js_toggle_button(label: str, key: str) -> bool:
 def pretty_notice(raw: str) -> str:
     if not raw:
         return ""
-
     s = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
-
-    # 1) 去掉类似 "\1." "\2、" "\3)" 这种反斜杠转义
     s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)
-
-    # 2) 去掉 markdown 痕迹（粗体/下划线/代码）
     s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
     s = re.sub(r"__(.*?)__", r"\1", s)
     s = re.sub(r"`([^`]+)`", r"\1", s)
-
-    # 3) 把 "- xxx" 变成更像群消息的 “· xxx”
     s = re.sub(r"(?m)^\s*-\s+", "· ", s)
-
-    # 4) 编号行前插入空行
     s = re.sub(r"(?m)^(?=\d+[\.\、\)])", "\n", s)
-
-    # 5) 常见 “【信息咨询】/【申诉与咨询】” 前加空行
     s = re.sub(r"\n?【", "\n\n【", s)
-
-    # 6) 合并多余空行
     s = re.sub(r"\n{3,}", "\n\n", s).strip()
-
     return s
 
 def add_emojis_smart(text: str) -> str:
     if not text:
         return ""
-
     lines = text.split("\n")
     out = []
-
     for i, line in enumerate(lines):
         L = line.strip()
         if not L:
             out.append("")
             continue
-
         has_emoji_prefix = bool(re.match(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]", L))
         if not has_emoji_prefix:
             if i <= 1 and re.search(r"(同学|大家|各位)", L):
                 L = "👋 " + L
-
             if re.search(r"(时间|今晚|明天|上午|下午|晚上|\d{1,2}[:：]\d{2})", L):
                 L = "⏰ " + L
             elif re.search(r"(地点|位置|教室|楼|宿舍|会议室)", L):
@@ -687,9 +656,7 @@ def add_emojis_smart(text: str) -> str:
                 L = "📄 " + L
             elif re.search(r"(步骤|流程|操作|请按|依次)", L):
                 L = "✅ " + L
-
         out.append(L)
-
     return "\n".join(out).strip()
 
 # =========================
@@ -701,6 +668,7 @@ if "last_inputs" not in st.session_state:
     st.session_state.last_inputs = {"text": "", "scenario": "", "profile": {}}
 if "is_loading" not in st.session_state:
     st.session_state.is_loading = False
+
 for k in ["更清晰", "更安抚", "更可执行"]:
     st.session_state.setdefault(f"emoji_on_{k}", False)
 
@@ -817,7 +785,6 @@ risk_col, emo_col = st.columns([1.1, 1], gap="large")
 
 with risk_col:
     st.markdown("**风险点**")
-    issues = result.get("issues", []) or []
     if not issues:
         st.info("未识别到明显风险点。")
     else:
@@ -883,9 +850,17 @@ rewrites = rewrites[:3]
 name_to_rw = {(rw.get("name") or "").strip(): rw for rw in rewrites}
 tabs = st.tabs(["更清晰", "更安抚", "更可执行"])
 
+# ✅ 关键：tab 对应 ASCII key，保证 query param 稳定
+TAB_KEYS = {
+    "更清晰": "clear",
+    "更安抚": "soothe",
+    "更可执行": "action",
+}
+
 for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
     rw = name_to_rw.get(tname, {"name": tname, "pred_risk_score": "-", "text": "", "why": ""})
     rw["name"] = tname
+    tkey = TAB_KEYS[tname]
 
     with tab:
         pr = rw.get("pred_risk_score", "-")
@@ -922,19 +897,17 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
             unsafe_allow_html=True,
         )
 
-        # 留出间距，避免按钮太挤
         st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
-        # 左：emoji 右：复制（同款按钮）
         b1, b2 = st.columns(2, gap="medium")
         with b1:
             label = "取消emoji" if st.session_state[emoji_key] else "添加emoji"
-            if js_toggle_button(label, key=f"emoji_{tname}"):
+            if js_toggle_button(label, key=f"emoji_{tkey}"):
                 st.session_state[emoji_key] = not st.session_state[emoji_key]
                 st.rerun()
 
         with b2:
-            clipboard_copy_button(final_txt, key=f"copy_{tname}", label="复制该版本")
+            clipboard_copy_button(final_txt, key=f"copy_{tkey}", label="复制该版本")
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
