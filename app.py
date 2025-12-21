@@ -671,7 +671,7 @@ if not result:
 else:
     render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
 
-    # ---- Highlight shown directly under input area (requested) ----
+    # ---- Highlight shown directly ----
     issues = result.get("issues", []) or []
     phrases = [(it.get("evidence") or "").strip() for it in issues if (it.get("evidence") or "").strip()]
     if current_text.strip() and phrases:
@@ -681,16 +681,14 @@ else:
 
     st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
-# ---- Emotion Prediction (NOT collapsed, two columns) ----
-st.markdown('<div class="section-h">情绪预测</div>', unsafe_allow_html=True)
+    # ---- Emotion Prediction (two columns) ----
+    st.markdown('<div class="section-h">情绪预测</div>', unsafe_allow_html=True)
 
-risk_col, emo_col = st.columns([1.1, 1], gap="large")
+    risk_col, emo_col = st.columns([1.1, 1], gap="large")
 
-with risk_col:
-    with st.container():
+    with risk_col:
         st.markdown("**风险点**")
 
-        issues = result.get("issues", []) or []
         if not issues:
             st.info("未识别到明显风险点。")
         else:
@@ -717,8 +715,7 @@ with risk_col:
                 unsafe_allow_html=True,
             )
 
-with emo_col:
-    with st.container():
+    with emo_col:
         st.markdown("**学生情绪**")
 
         emos = result.get("student_emotions", []) or []
@@ -744,11 +741,10 @@ with emo_col:
                     unsafe_allow_html=True,
                 )
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
+    # ✅ 关键：到这里两列就结束了，下面在“列外面”写改写建议
     st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
-    # ---- Rewrite suggestions ----
+    # ---- Rewrite suggestions (FULL WIDTH) ----
     st.markdown('<div class="section-h">改写建议</div>', unsafe_allow_html=True)
 
     rewrites = result.get("rewrites", []) or []
@@ -798,3 +794,4 @@ st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
     unsafe_allow_html=True,
 )
+ 
