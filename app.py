@@ -986,18 +986,87 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
             """,
             unsafe_allow_html=True,
         )
+def tip_block():
+    st.markdown(
+        """
+        <div class="tip">
+          <div class="tip-title">通知小贴士</div>
+          <div class="tip-text">撰写通知时应尽量涵盖时间窗口 / 执行范围 / 可替代方案 / 咨询渠道。<br>信息越完整，越不容易被误读噢💙</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-        # --- Buttons UNDER the text, side-by-side, consistent size ---
-        b1, b2 = st.columns(2, gap="medium")
 
-        with b1:
-             clipboard_copy_button(final_txt, key=f"{tname}")
+def format_notice_for_chat(raw: str) -> str:
+    """把模型输出的 markdown/奇怪符号，整理成更像群通知的排版。"""
+    if not raw:
+        return ""
 
-        with b2:
-             label = "取消emoji" if st.session_state[emoji_key] else "自动添加emoji"
-            if st.button(label, key=f"btn_emoji_{tname}", type="secondary", use_container_width=True):
-            st.session_state[emoji_key] = not st.session_state[emoji_key]
-            st.rerun()
+    s = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    # 1) 去掉类似 "\1." 这种反斜杠转义
+    s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)  # \1. -> 1.
+
+    # 2) 去掉 markdown 加粗/下划线/代码符号
+    s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)   # **xx** -> xx
+    s = re.sub(r"__(.*?)__", r"\1", s)       # __xx__ -> xx
+    s = re.sub(r"`(.*?)`", r"\1", s)         # `xx` -> xx
+
+    # 3) 把 "- xxx" 变成更像群消息的 “· xxx”
+    s = re.sub(r"(?m)^\s*-\s+", "· ", s)
+
+    # 4) 让编号项“自动分段”：1. / 2、/ 3) 前面插入空行
+    s = re.sub(r"(?m)^\s*(\d+)[\.\、\)]\s*", r"\n\1. ", s)
+
+    # 5) 常见“【信息咨询】/【咨询】”前加空行
+    s = re.sub(r"\n?【", "\n\n【", s)
+
+    # 6) 合并多余空行
+    s = re.sub(r"\n{3,}", "\n\n", s).strip()
+
+    return s
+
+
+def add_emojis_smart(text: str) -> str:
+    """在合适位置加少量 emoji（不刷屏），更像校园通知。"""
+    if not text:
+        return ""
+
+    lines = text.split("\n")
+    out = []
+
+    for i, line in enumerate(lines):
+        L = line.strip()
+        if not L:
+            out.append("")
+            continue
+
+        # 行首已有 emoji 就不强行再加
+        has_emoji_prefix = bool(re.match(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]", L))
+
+        if not has_emoji_prefix:
+            # 开头招呼
+            if i <= 1 and re.search(r"(同学|大家|各位)", L):
+                L = "👋 " + L
+
+            # 关键语义：时间/地点/联系/提醒/材料/流程
+            if re.search(r"(时间|今晚|明天|上午|下午|晚上|\d{1,2}[:：]\d{2})", L):
+                L = "⏰ " + L
+            elif re.search(r"(地点|位置|教室|楼|宿舍|会议室)", L):
+                L = "📍 " + L
+            elif re.search(r"(咨询|联系|沟通|电话|微信|邮箱)", L):
+                L = "☎️ " + L
+            elif re.search(r"(注意|提醒|请勿|禁止|务必|重要)", L):
+                L = "⚠️ " + L
+            elif re.search(r"(材料|附件|表格|申请|提交)", L):
+                L = "📄 " + L
+            elif re.search(r"(步骤|流程|操作|请按|依次)", L):
+                L = "✅ " + L
+
+        out.append(L)
+
+    return "\n".join(out).strip()
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
