@@ -251,22 +251,28 @@ st.markdown(
 )
 
 # =========================
-# Header
+# Header (logo left, title right)
 # =========================
-st.markdown(
-    """
-    <div class="hero">
-      <div class="hero-title">清小知</div>
-      <div class="hero-sub">
-        <div class="hero-pill">
-          <span class="hero-dot"></span>
-          <span>高校通知小助手｜让通知更容易被理解</span>
+c_logo, c_title = st.columns([1, 8], vertical_alignment="center")
+
+with c_logo:
+    st.image("logo.png", width=72)
+
+with c_title:
+    st.markdown(
+        """
+        <div class="hero" style="text-align:left; padding: 6px 0 6px 0;">
+          <div class="hero-title">清小知</div>
+          <div class="hero-sub" style="justify-content:flex-start;">
+            <div class="hero-pill">
+              <span class="hero-dot"></span>
+              <span>高校通知小助手｜让通知更容易被理解</span>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+        """,
+        unsafe_allow_html=True,
+    )
 
 # =========================
 # DeepSeek config
