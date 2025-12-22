@@ -267,6 +267,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+clipboard_copy_injector()
 
 # =========================
 # DeepSeek config
@@ -550,49 +551,42 @@ def tip_block():
         unsafe_allow_html=True,
     )
 
-def clipboard_copy_button(text: str, key: str):
-    """复制按钮（JS clipboard）——外观与 secondary 按钮一致"""
+def clipboard_copy_injector():
+    """全局注入一次：监听 window 里的 copy payload 并写入剪贴板。"""
+    components.html(
+        """
+        <script>
+        // global clipboard helper (once)
+        if (!window.__QXZ_CLIPBOARD_INSTALLED__) {
+          window.__QXZ_CLIPBOARD_INSTALLED__ = true;
+
+          window.__QXZ_DO_COPY__ = async function(payload) {
+            try {
+              await navigator.clipboard.writeText(payload || "");
+              window.__QXZ_COPY_OK__ = true;
+            } catch(e) {
+              window.__QXZ_COPY_OK__ = false;
+            }
+          };
+        }
+        </script>
+        """,
+        height=0,
+    )
+
+def clipboard_copy_fire(text: str):
+    """触发一次复制（在本次渲染中执行 JS）。"""
     safe = json.dumps(text, ensure_ascii=False)
     components.html(
         f"""
-        <div style="margin-top:0px;">
-          <button id="btn-{key}" style="
-            width:100%;
-            border-radius:18px;
-            padding:16px 14px;
-            font-weight:900;
-            font-size:20px;
-            border:2px solid rgba(37,99,235,.28);
-            background: rgba(37,99,235,.06);
-            color: rgba(37,99,235,1);
-            box-shadow: 0 12px 28px rgba(2,6,23,.06);
-            cursor:pointer;
-            transition: transform .15s ease, filter .2s ease;
-          ">复制该版本</button>
-        </div>
         <script>
-          const btn = document.getElementById("btn-{key}");
-          btn.addEventListener("mouseover", () => {{
-            btn.style.transform = "translateY(-1px)";
-            btn.style.filter = "brightness(1.02)";
-          }});
-          btn.addEventListener("mouseout", () => {{
-            btn.style.transform = "translateY(0px)";
-            btn.style.filter = "none";
-          }});
-          btn.addEventListener("click", async () => {{
-            try {{
-              await navigator.clipboard.writeText({safe});
-              btn.innerText = "已复制 ✓";
-              setTimeout(() => btn.innerText = "复制该版本", 1200);
-            }} catch (e) {{
-              btn.innerText = "复制失败（请手动全选复制）";
-              setTimeout(() => btn.innerText = "复制该版本", 1600);
-            }}
-          }});
+          if (window.__QXZ_DO_COPY__) {{
+            window.__QXZ_DO_COPY__({safe});
+          }}
         </script>
         """,
-        height=70,
+        height=0,
+    )ight=70,
     )
 
 def pretty_notice(raw: str) -> str:
@@ -656,6 +650,9 @@ if "is_loading" not in st.session_state:
     st.session_state.is_loading = False
 for k in ["更清晰", "更安抚", "更可执行"]:
     st.session_state.setdefault(f"emoji_on_{k}", False)
+for k in ["更清晰", "更安抚", "更可执行"]:
+    st.session_state.setdefault(f"copy_req_{k}", False)
+    st.session_state.setdefault(f"copy_text_{k}", "")
 
 # =========================
 # Input layout
@@ -879,14 +876,26 @@ for tname, tab in zip(["更清晰", "更安抚", "更可执行"], tabs):
         st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
         # Buttons: LEFT emoji, RIGHT copy
+        # spacing between text card and buttons
+        st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+
         b1, b2 = st.columns(2, gap="medium")
         with b1:
             label = "取消emoji" if st.session_state[emoji_key] else "添加emoji"
             if st.button(label, key=f"btn_emoji_{tname}", type="secondary", use_container_width=True):
                 st.session_state[emoji_key] = not st.session_state[emoji_key]
                 st.rerun()
+
         with b2:
-            clipboard_copy_button(final_txt, key=f"copy_{tname}")
+            if st.button("复制该版本", key=f"btn_copy_{tname}", type="secondary", use_container_width=True):
+                st.session_state[f"copy_req_{tname}"] = True
+                st.session_state[f"copy_text_{tname}"] = final_txt
+                st.rerun()
+
+        # 如果刚刚点击了复制按钮：在本次渲染里执行 JS 复制，然后清掉标记
+        if st.session_state.get(f"copy_req_{tname}", False):
+            clipboard_copy_fire(st.session_state.get(f"copy_text_{tname}", ""))
+            st.session_state[f"copy_req_{tname}"] = False
 
 st.markdown(
     "<div class='footnote'>注：本工具用于文字优化与风险提示；不分析个人，不替代人工判断。</div>",
