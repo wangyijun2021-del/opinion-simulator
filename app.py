@@ -267,7 +267,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-clipboard_copy_injector()
+# clipboard_copy_injector()
 
 # =========================
 # DeepSeek config
