@@ -220,7 +220,7 @@ st.markdown(
         50%{ opacity:1; transform: translateY(-2px); }
       }
 
-      /* Secondary action button */
+      /* Secondary button for actions */
       div.stButton > button[kind="secondary"]{
         width: 100% !important;
         border-radius: 18px !important;
@@ -297,12 +297,31 @@ EMOJI_MAP = {
     "反感": "🙃",
 }
 
+# --- 风险门槛：硬规则关键词（你之后可继续扩充） ---
+NEGATIVE_CONSEQ_WORDS = [
+    "处分", "通报", "追责", "严肃处理", "从严", "清退", "取消资格", "影响评优", "记入", "扣分", "处罚",
+    "必须", "一律", "不得", "严禁", "否则", "后果自负", "责任自负", "视为放弃", "将被", "逾期不再",
+]
+FAIRNESS_RESOURCE_WORDS = [
+    "名额", "优先", "排序", "资格", "评选", "评优", "奖学金", "助学金", "资助", "补贴", "分配", "指标", "录取",
+]
+DISCIPLINE_WORDS = [
+    "违纪", "违规", "纪律", "处分", "通报", "处理决定", "处理通告", "问责", "调查", "举报",
+]
+POLICY_WORDS = [
+    "制度", "规定", "办法", "细则", "政策", "条例", "实施", "执行标准", "解释权", "最终解释权",
+]
+# 事务型：出现 >=2 基本就不该被当舆情风险
+TRANSACTIONAL_HINTS = [
+    "领取", "发放", "领取地点", "配送", "领取时间", "办公室", "带好", "携带", "请前往", "请到", "数量", "一套", "人手",
+    "领取方式", "现场", "登记", "材料", "附件", "表格", "提交", "截止", "时间", "地点", "联系人", "咨询",
+]
+
 def safe_extract_json(text: str):
     if not text:
         return None, "empty_response"
     cleaned = re.sub(r"```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
     cleaned = cleaned.replace("```", "").strip()
-
     try:
         return json.loads(cleaned), None
     except Exception:
@@ -325,207 +344,12 @@ def call_deepseek(system_prompt: str, user_prompt: str, model: str = "deepseek-c
     payload = {
         "model": model,
         "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-        "temperature": 0.25,  # 更稳一点
+        "temperature": 0.3,
     }
     r = requests.post(API_URL, headers=headers, json=payload, timeout=90)
     r.raise_for_status()
     data = r.json()
     return data["choices"][0]["message"]["content"]
-
-def local_fallback(text: str):
-    risky_words = ["严肃处理", "通报批评", "纪律处分", "一律", "从严", "不得", "立即", "清退", "追责", "强制", "处分", "严禁", "必须"]
-    hits = [w for w in risky_words if w in text]
-    score = 10 + min(70, len(hits) * 10)
-    level = "LOW" if score < 30 else ("MEDIUM" if score < 60 else "HIGH")
-
-    issues = []
-    if hits:
-        issues.append(
-            {
-                "title": "措辞强硬 / 惩戒导向",
-                "evidence": hits[0],
-                "why": "传播链：学生可能解读为“结果已定/高压” → 群内吐槽/截图转发 → 引发抵触情绪与二次传播。",
-                "rewrite_tip": "补充依据与范围，明确流程与咨询渠道；用“提醒+规范+支持”替代单纯惩戒。",
-            }
-        )
-
-    emotions = [
-        {"group": "普通学生", "sentiment": "焦虑", "intensity": 0.45, "sample_comment": "能不能把标准和范围说清楚？"},
-        {"group": "宿舍长/楼委", "sentiment": "担忧", "intensity": 0.35, "sample_comment": "希望给个可操作清单，别临时加码。"},
-        {"group": "敏感群体", "sentiment": "抵触", "intensity": 0.50, "sample_comment": "别一刀切，至少给个申诉/咨询渠道。"},
-    ]
-
-    rewrites = [
-        {"name": "更清晰", "pred_risk_score": max(5, score - 18), "text": "（兜底）请补充时间窗口/对象范围/提交方式/咨询渠道。", "why": "补齐关键信息，减少误读。"},
-        {"name": "更安抚", "pred_risk_score": max(5, score - 14), "text": "（兜底）强调目的与支持，说明冲突情况可登记沟通。", "why": "降低对抗情绪。"},
-        {"name": "更可执行", "pred_risk_score": max(5, score - 22), "text": "（兜底）给出材料清单、流程步骤、反馈节点与替代路径。", "why": "提高透明度与可执行性。"},
-    ]
-
-    return {
-        "risk_score": int(score),
-        "risk_level": level,
-        "summary": "已生成风险点与改写建议（兜底输出）。",
-        "issues": issues,
-        "student_emotions": emotions,
-        "rewrites": rewrites,
-    }
-
-# ---------- (1) 风险校准层：降低“过敏” ----------
-def calibrate_risk(parsed: dict, raw_text: str, scenario: str) -> dict:
-    """
-    校准层：降低对高校常见规范措辞的过敏；对真正惩戒/不透明/可断章取义点加敏。
-    并确保 risk_score / risk_level 一致。
-    """
-    try:
-        score = int(parsed.get("risk_score", 0) or 0)
-    except Exception:
-        score = 0
-    level = (parsed.get("risk_level") or "LOW").strip().upper()
-
-    # 常见规范用语：出现不等于风险（降敏）
-    soft_norm_words = ["请注意", "请同学们", "请遵守", "请配合", "如有疑问", "请及时", "请勿", "不得", "按时", "提交"]
-    soft_hits = sum(1 for w in soft_norm_words if w in raw_text)
-    score -= min(14, soft_hits * 3)
-
-    # 真正高风险触发：强惩戒 / 追责 / 清退 / 通报（加敏）
-    hard_words = ["严肃处理", "通报批评", "纪律处分", "一律", "从严", "清退", "追责", "强制", "处分", "严禁", "后果自负"]
-    hard_hits = sum(1 for w in hard_words if w in raw_text)
-    score += min(22, hard_hits * 6)
-
-    # 模糊口径 + 可被断章取义（加敏）
-    vague_words = ["视情况", "另行通知", "原则上", "酌情", "根据需要", "最终解释权"]
-    vague_hits = sum(1 for w in vague_words if w in raw_text)
-    score += min(12, vague_hits * 4)
-
-    # 场景：安全/宿舍/卫生类天然更规范一点（适度降敏）
-    if any(k in scenario for k in ["宿舍", "安全", "卫生", "公共安全"]):
-        score -= 6
-
-    score = max(0, min(100, score))
-
-    if score < 30:
-        level = "LOW"
-    elif score < 60:
-        level = "MEDIUM"
-    else:
-        level = "HIGH"
-
-    parsed["risk_score"] = int(score)
-    parsed["risk_level"] = level
-
-    # issues 也做个“不过载”保护：最多 4 条
-    issues = parsed.get("issues", []) or []
-    parsed["issues"] = issues[:4]
-
-    return parsed
-
-def analyze(text: str, scenario: str, profile: dict):
-    # ---------- (2)(3) Prompt：传播链 + 模板骨架 ----------
-    system_prompt = (
-        "你是高校舆情风险与学生情绪分析专家。"
-        "你必须输出【严格 JSON】且只能输出 JSON，不能有任何解释、前后缀、代码块标记。"
-        "JSON 必须可被 Python json.loads 直接解析。"
-    )
-
-    user_prompt = f"""
-你将分析高校通知文本的传播风险，并给出三种“更像真实高校通知”的改写版本。
-
-【场景】{scenario}
-
-【受众画像】
-- 年级/阶段：{profile.get("grade")}
-- 身份：{profile.get("role")}
-- 性别：{profile.get("gender")}
-- 情绪敏感度：{profile.get("sensitivity")}
-- 画像补充：{profile.get("custom")}
-
-【原文】
-{text}
-
-【输出要求】请输出严格 JSON，结构如下（字段名必须一致）：
-{{
-  "risk_score": 0-100的整数,
-  "risk_level": "LOW"|"MEDIUM"|"HIGH",
-  "summary": "一句话结论（具体、可读）",
-  "issues": [
-    {{
-      "title": "风险点标题（短）",
-      "evidence": "原文中触发风险的短语（必须来自原文，3-12 字）",
-      "why": "传播链（必须按：误读/不满点 → 传播渠道 → 可验证后果 的形式写）",
-      "rewrite_tip": "改写建议（具体怎么改，写到可执行）"
-    }}
-  ],
-  "student_emotions": [
-    {{
-      "group": "学生群体名称",
-      "sentiment": "主要情绪（如：焦虑/抵触/困惑/担忧/紧张）",
-      "intensity": 0到1的小数,
-      "sample_comment": "一句典型评论（口语化）"
-    }}
-  ],
-  "rewrites": [
-    {{
-      "name": "必须为：更清晰 / 更安抚 / 更可执行",
-      "pred_risk_score": 0-100整数,
-      "text": "改写后的完整文本（必须更像真实通知，结构化）",
-      "why": "1-2 句说明为什么更稳（简短）"
-    }}
-  ]
-}}
-
-【硬性规则（非常重要）】
-1) issues 最多 4 条；如果传播链不成立，就不要硬凑（宁可少）。
-2) 不要因为“常规管理/规范用语/一般提醒/礼貌性不得请勿”就判高风险。
-   只有当存在：口径模糊、惩戒不透明、不公平对待、成本转嫁、可被断章取义、情绪对立、信息缺失等，才视为风险点。
-3) issues.why 必须是传播链：例如“学生可能解读为… → 在班群/朋友圈截图吐槽 → 造成…（投诉/抵触/二次传播/误读扩散）”
-4) rewrites 必须且只能包含 3 个版本，顺序：更清晰、更安抚、更可执行。
-5) 三个改写版本都必须使用“通知骨架模板”，并且条目化呈现（用 1.2.3. 或 · ）：
-   - 开头：目的/背景（1 句）
-   - 中段：时间范围、适用对象、具体要求（3-6 条，尽量可操作）
-   - 末尾：咨询/申诉渠道 + 温和收束（1-2 句）
-6) 每个版本必须明确写出：时间范围 + 咨询渠道（两项都要有）；执行标准/材料清单/反馈节点 至少补充其中 1 项。
-7) intensity 必须在 0~1。
-8) issues.evidence 必须能在原文中直接找到（不要同义改写）。
-9) 不要使用夸张措辞（如“严重后果”“必将”），避免激化情绪。
-"""
-
-    try:
-        content = call_deepseek(system_prompt, user_prompt)
-        parsed, _ = safe_extract_json(content)
-        if parsed is None:
-            out = local_fallback(text)
-            return calibrate_risk(out, text, scenario)
-
-        # 防御性修正：rewrites 名称对齐
-        rewrites = parsed.get("rewrites", []) or []
-        buckets = {"更清晰": None, "更安抚": None, "更可执行": None}
-        for rw in rewrites:
-            n = (rw.get("name") or "").strip()
-            if n in buckets and buckets[n] is None:
-                rw["name"] = n
-                buckets[n] = rw
-
-        fixed = []
-        for n in ["更清晰", "更安抚", "更可执行"]:
-            if buckets[n] is not None:
-                fixed.append(buckets[n])
-
-        if len(fixed) < 3:
-            for rw in rewrites:
-                if rw not in fixed:
-                    fixed.append(rw)
-                if len(fixed) >= 3:
-                    break
-
-        parsed["rewrites"] = fixed[:3]
-
-        # (1) 校准层
-        parsed = calibrate_risk(parsed, text, scenario)
-        return parsed
-
-    except Exception:
-        out = local_fallback(text)
-        return calibrate_risk(out, text, scenario)
 
 def clamp01(x):
     try:
@@ -534,11 +358,55 @@ def clamp01(x):
         return 0.0
     return max(0.0, min(1.0, x))
 
+def pretty_notice(raw: str) -> str:
+    """清理 markdown/转义，让通知更像群消息"""
+    if not raw:
+        return ""
+    s = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
+    s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)
+    s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
+    s = re.sub(r"__(.*?)__", r"\1", s)
+    s = re.sub(r"`([^`]+)`", r"\1", s)
+    s = re.sub(r"(?m)^\s*-\s+", "· ", s)
+    s = re.sub(r"(?m)^(?=\d+[\.\、\)])", "\n", s)
+    s = re.sub(r"\n?【", "\n\n【", s)
+    s = re.sub(r"\n{3,}", "\n\n", s).strip()
+    return s
+
+def add_emojis_smart(text: str) -> str:
+    """克制地加 emoji（不刷屏）"""
+    if not text:
+        return ""
+    lines = text.split("\n")
+    out = []
+    for i, line in enumerate(lines):
+        L = line.strip()
+        if not L:
+            out.append("")
+            continue
+        has_emoji_prefix = bool(re.match(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]", L))
+        if not has_emoji_prefix:
+            if i <= 1 and re.search(r"(同学|大家|各位)", L):
+                L = "👋 " + L
+            if re.search(r"(时间|今晚|明天|上午|下午|晚上|\d{1,2}[:：]\d{2})", L):
+                L = "⏰ " + L
+            elif re.search(r"(地点|位置|教室|楼|宿舍|会议室|办公室)", L):
+                L = "📍 " + L
+            elif re.search(r"(咨询|联系|沟通|电话|微信|邮箱)", L):
+                L = "☎️ " + L
+            elif re.search(r"(注意|提醒|请勿|禁止|务必|重要)", L):
+                L = "⚠️ " + L
+            elif re.search(r"(材料|附件|表格|申请|提交)", L):
+                L = "📄 " + L
+            elif re.search(r"(步骤|流程|操作|请按|依次)", L):
+                L = "✅ " + L
+        out.append(L)
+    return "\n".join(out).strip()
+
 def highlight_text_html(raw_text: str, phrases: list[str]) -> str:
     if not raw_text:
         return ""
     safe = html.escape(raw_text)
-
     uniq = []
     for p in phrases or []:
         p = (p or "").strip()
@@ -548,11 +416,9 @@ def highlight_text_html(raw_text: str, phrases: list[str]) -> str:
             continue
         if p not in uniq:
             uniq.append(p)
-
     for p in sorted(uniq, key=len, reverse=True):
         safe_p = html.escape(p)
         safe = safe.replace(safe_p, f"<mark class='hl'>{safe_p}</mark>")
-
     return f"<div class='card' style='line-height:1.85;font-size:15px;'>{safe}</div>"
 
 def risk_bar_color(level: str) -> str:
@@ -565,7 +431,6 @@ def risk_bar_color(level: str) -> str:
 def render_overview(risk_score: int, risk_level: str, summary: str):
     pct = max(0, min(100, int(risk_score)))
     k1, k2, k3 = st.columns([1, 1, 2], gap="medium")
-
     bar_bg = risk_bar_color(risk_level)
 
     with k1:
@@ -615,16 +480,20 @@ def tip_block():
         unsafe_allow_html=True,
     )
 
+# ============== 关键：复制按钮需要全局注入一次 ==============
 def clipboard_copy_injector():
-    """全局注入一次：提供 window.__QXZ_DO_COPY__ 供后续触发复制"""
     components.html(
         """
         <script>
         if (!window.__QXZ_CLIPBOARD_INSTALLED__) {
           window.__QXZ_CLIPBOARD_INSTALLED__ = true;
           window.__QXZ_DO_COPY__ = async function(payload) {
-            try { await navigator.clipboard.writeText(payload || ""); }
-            catch(e) {}
+            try {
+              await navigator.clipboard.writeText(payload || "");
+              window.__QXZ_COPY_OK__ = true;
+            } catch(e) {
+              window.__QXZ_COPY_OK__ = false;
+            }
           };
         }
         </script>
@@ -633,7 +502,6 @@ def clipboard_copy_injector():
     )
 
 def clipboard_copy_fire(text: str):
-    """触发一次复制（在本次渲染中执行 JS）"""
     safe = json.dumps(text, ensure_ascii=False)
     components.html(
         f"""
@@ -646,61 +514,244 @@ def clipboard_copy_fire(text: str):
         height=0,
     )
 
-def pretty_notice(raw: str) -> str:
-    """清理 markdown/转义，让通知更像群消息"""
-    if not raw:
-        return ""
+clipboard_copy_injector()
 
-    s = raw.replace("\r\n", "\n").replace("\r", "\n").strip()
-    s = re.sub(r"\\(?=\d+[\.\、\)])", "", s)
-    s = re.sub(r"\*\*(.*?)\*\*", r"\1", s)
-    s = re.sub(r"__(.*?)__", r"\1", s)
-    s = re.sub(r"`([^`]+)`", r"\1", s)
-    s = re.sub(r"(?m)^\s*-\s+", "· ", s)
-    s = re.sub(r"(?m)^(?=\d+[\.\、\)])", "\n", s)
-    s = re.sub(r"\n?【", "\n\n【", s)
-    s = re.sub(r"\n{3,}", "\n\n", s).strip()
-    return s
+# =========================
+# Risk Gate（门槛判断）
+# =========================
+def _hit_any(text: str, words: list[str]) -> bool:
+    return any(w in text for w in words)
 
-def add_emojis_smart(text: str) -> str:
-    """克制地加 emoji（不刷屏）"""
-    if not text:
-        return ""
+def _hit_count(text: str, words: list[str]) -> int:
+    return sum(1 for w in words if w in text)
 
-    lines = text.split("\n")
-    out = []
-    for i, line in enumerate(lines):
-        L = line.strip()
-        if not L:
-            out.append("")
-            continue
+def risk_gate(text: str) -> dict:
+    """
+    输出：
+      - is_substantive: 是否存在“实质舆情风险触发因素”
+      - reason: 门槛解释
+      - type: 事务型/政策型/纪律处分型/资源分配型/其他
+      - transactional: 是否明显事务型
+    """
+    t = text or ""
 
-        has_emoji_prefix = bool(re.match(r"^[\u2600-\u27BF\U0001F300-\U0001FAFF]", L))
-        if not has_emoji_prefix:
-            if i <= 1 and re.search(r"(同学|大家|各位)", L):
-                L = "👋 " + L
+    has_negative = _hit_any(t, NEGATIVE_CONSEQ_WORDS)
+    has_fairness = _hit_any(t, FAIRNESS_RESOURCE_WORDS)
+    has_discipline = _hit_any(t, DISCIPLINE_WORDS)
+    has_policy = _hit_any(t, POLICY_WORDS)
 
-            if re.search(r"(时间|今晚|明天|上午|下午|晚上|\d{1,2}[:：]\d{2})", L):
-                L = "⏰ " + L
-            elif re.search(r"(地点|位置|教室|楼|宿舍|会议室)", L):
-                L = "📍 " + L
-            elif re.search(r"(咨询|联系|沟通|电话|微信|邮箱)", L):
-                L = "☎️ " + L
-            elif re.search(r"(注意|提醒|请勿|禁止|务必|重要)", L):
-                L = "⚠️ " + L
-            elif re.search(r"(材料|附件|表格|申请|提交)", L):
-                L = "📄 " + L
-            elif re.search(r"(步骤|流程|操作|请按|依次)", L):
-                L = "✅ " + L
+    transactional_hits = _hit_count(t, TRANSACTIONAL_HINTS)
+    transactional = transactional_hits >= 2 and (not has_negative) and (not has_fairness) and (not has_discipline)
 
-        out.append(L)
-    return "\n".join(out).strip()
+    # 类型
+    if has_discipline or _hit_any(t, ["处分", "违纪", "通报"]):
+        ntype = "纪律处分型"
+    elif has_fairness:
+        ntype = "资源分配型"
+    elif has_policy:
+        ntype = "政策制度型"
+    elif transactional:
+        ntype = "事务型"
+    else:
+        ntype = "其他"
+
+    # 门槛：只要出现“负面后果/不公平/纪律处分/政策强约束”才算实质风险
+    is_substantive = bool(has_negative or has_fairness or has_discipline or (has_policy and _hit_any(t, ["必须", "不得", "严禁", "一律", "否则", "逾期"])))
+
+    if transactional and not is_substantive:
+        return {
+            "is_substantive": False,
+            "reason": "该文本更像事务型通知，未出现惩戒后果/权益分配/纪律处分等实质舆情触发因素。",
+            "type": ntype,
+            "transactional": True,
+        }
+
+    if not is_substantive:
+        return {
+            "is_substantive": False,
+            "reason": "未检测到明确的惩戒后果、不公平分配、纪律处分或强约束条款；若有问题多为表达/信息完整度。",
+            "type": ntype,
+            "transactional": transactional,
+        }
+
+    return {
+        "is_substantive": True,
+        "reason": "检测到可能引发争议的触发因素（如后果条款/权益分配/纪律处分/强约束政策），建议进入舆情风险分析。",
+        "type": ntype,
+        "transactional": transactional,
+    }
+
+# =========================
+# Model analyze（降低“过敏”）
+# =========================
+def local_fallback(text: str):
+    # 兜底：也走 risk_gate，避免兜底时过敏
+    gate = risk_gate(text)
+    if not gate["is_substantive"]:
+        return {
+            "risk_score": 10,
+            "risk_level": "LOW",
+            "summary": "未检测到实质舆情风险（偏事务型/日常沟通）。如需可做轻量表达优化。",
+            "issues": [],
+            "student_emotions": [],
+            "rewrites": [
+                {"name": "更清晰", "pred_risk_score": 10, "text": "（兜底）建议补充时间/地点/咨询方式，使信息更清晰。", "why": "事务型通知以信息完整为主。"},
+                {"name": "更安抚", "pred_risk_score": 10, "text": "（兜底）建议增加一句感谢/理解，语气更柔和。", "why": "降低误读与抵触。"},
+                {"name": "更可执行", "pred_risk_score": 10, "text": "（兜底）建议用清单列出“时间-地点-操作步骤”。", "why": "可执行性更强。"},
+            ],
+            "risk_gate": gate,
+        }
+
+    # 如果真有触发因素，再给一个中等强度兜底
+    return {
+        "risk_score": 55,
+        "risk_level": "MEDIUM",
+        "summary": "可能存在规则口径/后果表达引发争议的点，建议明确范围与例外。",
+        "issues": [],
+        "student_emotions": [],
+        "rewrites": [
+            {"name": "更清晰", "pred_risk_score": 45, "text": "（兜底）建议明确范围、时间窗口、执行标准与咨询渠道。", "why": "减少误读。"},
+            {"name": "更安抚", "pred_risk_score": 45, "text": "（兜底）说明目的与支持措施，避免对立语气。", "why": "降低抵触。"},
+            {"name": "更可执行", "pred_risk_score": 40, "text": "（兜底）用步骤清单+截止时间+申诉渠道。", "why": "更可操作。"},
+        ],
+        "risk_gate": gate,
+    }
+
+def analyze(text: str, scenario: str, profile: dict):
+    gate = risk_gate(text)
+
+    system_prompt = (
+        "你是高校舆情风险与学生情绪分析专家。"
+        "你必须输出【严格 JSON】且只能输出 JSON，不能有任何解释、前后缀、代码块标记。"
+        "JSON 必须可被 Python json.loads 直接解析。"
+    )
+
+    # 关键：在 prompt 里显式告诉模型“不要把调侃/不正式当舆情风险”
+    user_prompt = f"""
+你要先做【风险门槛判断 Risk Gate】，再决定是否进入“舆情风险分析”。
+
+【特别强调】
+- “风格不够正式/可能被调侃/可能被截图发群”不属于舆情风险，只能算“表达优化”；
+- 只有出现以下至少一类，才算“实质舆情风险”：
+  1) 明确惩戒/负面后果（处分、通报、追责、取消资格、逾期不受理等）
+  2) 资源/名额/资格分配导致的不公平争议
+  3) 纪律处分/违纪处理
+  4) 强约束政策且口径模糊可能引发权益受损
+
+【场景】{scenario}
+
+【受众画像】
+- 年级/阶段：{profile.get("grade")}
+- 身份：{profile.get("role")}
+- 性别：{profile.get("gender")}
+- 情绪敏感度：{profile.get("sensitivity")}
+- 画像补充：{profile.get("custom")}
+
+【原文】
+{text}
+
+【你必须输出的 JSON 结构】字段名必须一致：
+{{
+  "risk_gate": {{
+    "type": "事务型|政策制度型|纪律处分型|资源分配型|其他",
+    "is_substantive": true/false,
+    "reason": "一句话解释门槛判断"
+  }},
+  "risk_score": 0-100的整数,
+  "risk_level": "LOW"|"MEDIUM"|"HIGH",
+  "summary": "一句话结论（具体、可读）",
+  "issues": [
+    {{
+      "title": "风险点标题（如果只是表达风格，请写：表达优化点）",
+      "evidence": "原文中触发点短语（必须来自原文，尽量 3-12 字）",
+      "why": "原因（高校语境）",
+      "rewrite_tip": "怎么改（具体）"
+    }}
+  ],
+  "student_emotions": [
+    {{
+      "group": "学生群体名称",
+      "sentiment": "主要情绪（焦虑/抵触/困惑/担忧/紧张/轻松/无明显）",
+      "intensity": 0到1的小数,
+      "sample_comment": "一句典型评论（口语化）"
+    }}
+  ],
+  "rewrites": [
+    {{
+      "name": "必须为：更清晰 / 更安抚 / 更可执行",
+      "pred_risk_score": 0-100整数,
+      "text": "改写后的完整文本（含义一致，但表达要明显不同）",
+      "why": "1-2句话说明为何更稳"
+    }}
+  ]
+}}
+
+【强制规则】
+1) 如果 risk_gate.is_substantive=false：
+   - risk_level 必须是 LOW
+   - risk_score 必须 <= 25
+   - issues 最多 1 条，且必须是“表达优化点”，不要写传播链、不要写惩戒、不准渲染舆情
+   - student_emotions 必须为空数组 []
+2) rewrites 必须且只能 3 个，顺序：更清晰、更安抚、更可执行
+3) issues.evidence 必须能在原文中直接找到
+4) intensity 必须在 0~1
+"""
+
+    try:
+        content = call_deepseek(system_prompt, user_prompt)
+        parsed, _ = safe_extract_json(content)
+        if parsed is None:
+            return local_fallback(text)
+
+        # ---------- 统一修复 rewrites ----------
+        rewrites = parsed.get("rewrites", []) or []
+        buckets = {"更清晰": None, "更安抚": None, "更可执行": None}
+        for rw in rewrites:
+            n = (rw.get("name") or "").strip()
+            if n in buckets and buckets[n] is None:
+                rw["name"] = n
+                buckets[n] = rw
+        fixed = []
+        for n in ["更清晰", "更安抚", "更可执行"]:
+            if buckets[n] is not None:
+                fixed.append(buckets[n])
+        if len(fixed) < 3:
+            for rw in rewrites:
+                if rw not in fixed:
+                    fixed.append(rw)
+                if len(fixed) >= 3:
+                    break
+        parsed["rewrites"] = fixed[:3]
+
+        # ---------- 硬规则后处理：Risk Gate 强制降敏 ----------
+        # 以本地 gate 为准（避免模型误判）
+        parsed.setdefault("risk_gate", {})
+        parsed["risk_gate"]["type"] = gate["type"]
+        parsed["risk_gate"]["is_substantive"] = gate["is_substantive"]
+        parsed["risk_gate"]["reason"] = gate["reason"]
+
+        if not gate["is_substantive"]:
+            # 强制 LOW
+            parsed["risk_level"] = "LOW"
+            parsed["risk_score"] = min(int(parsed.get("risk_score", 15) or 15), 25)
+            # 不渲染情绪/传播链
+            parsed["student_emotions"] = []
+            # issues 只保留最多 1 条表达优化
+            issues = parsed.get("issues", []) or []
+            if issues:
+                issues = issues[:1]
+                issues[0]["title"] = "表达优化点"
+            parsed["issues"] = issues
+            # summary 更克制
+            parsed["summary"] = parsed.get("summary") or "未检测到实质舆情风险（偏事务型/日常沟通）。如需可做轻量表达优化。"
+
+        return parsed
+    except Exception:
+        return local_fallback(text)
 
 # =========================
 # Session state
 # =========================
-clipboard_copy_injector()
-
 if "result" not in st.session_state:
     st.session_state.result = None
 if "last_inputs" not in st.session_state:
@@ -808,6 +859,24 @@ if not result:
 
 render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
 
+# Risk Gate 小提示（用于解释“为什么不挑刺”）
+rg = result.get("risk_gate", {}) or {}
+if rg:
+    st.markdown(
+        f"""
+        <div class="card" style="margin-top:12px;">
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+            <div style="font-weight:900; font-size:15px; line-height:1.25;">门槛判断：{html.escape(str(rg.get("type","")))} </div>
+            <span class="blue-tag">is_substantive: {html.escape(str(rg.get("is_substantive", False)))}</span>
+          </div>
+          <div class="muted" style="margin-top:10px; font-size:13px; line-height:1.65;">
+            {html.escape(str(rg.get("reason","")))}
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 issues = result.get("issues", []) or []
 phrases = [(it.get("evidence") or "").strip() for it in issues if (it.get("evidence") or "").strip()]
 
@@ -819,64 +888,67 @@ if current_text.strip() and phrases:
 st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
 # =========================
-# Emotion Prediction
+# Emotion Prediction（LOW 默认不渲染，避免“吓人”）
 # =========================
 st.markdown('<div class="section-h">情绪预测</div>', unsafe_allow_html=True)
 
-risk_col, emo_col = st.columns([1.1, 1], gap="large")
+risk_level = result.get("risk_level", "LOW")
+emos = result.get("student_emotions", []) or []
 
-with risk_col:
-    st.markdown("**风险点**")
-    issues = result.get("issues", []) or []
-    if not issues:
-        st.info("未识别到明显风险点。")
-    else:
-        options = [f"{i+1}. {it.get('title','(未命名)')}" for i, it in enumerate(issues)]
-        selected = st.radio(" ", options=options, label_visibility="collapsed", key="risk_pick")
-        idx = int(selected.split(".")[0]) - 1
-        it = issues[idx]
-
-        st.markdown(
-            f"""
-            <div class='rp-item'>
-              <div style="font-weight:900; margin-bottom:8px; color:rgba(37,99,235,1);">
-                触发片段：{html.escape(str(it.get('evidence','')))}
-              </div>
-              <div style="margin-top:6px; color:rgba(15,23,42,.88); line-height:1.75;">
-                <b>传播链：</b>{html.escape(str(it.get('why','')))}
-              </div>
-              <div style="margin-top:8px; color:rgba(15,23,42,.88); line-height:1.75;">
-                <b>建议：</b>{html.escape(str(it.get('rewrite_tip','')))}
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-with emo_col:
-    st.markdown("**学生情绪**")
-    emos = result.get("student_emotions", []) or []
-    if not emos:
-        st.info("未生成情绪画像。")
-    else:
-        for e in emos:
-            emo = (e.get("sentiment") or "").strip()
-            emoji = EMOJI_MAP.get(emo, "💭")
-            intensity = clamp01(e.get("intensity", 0))
-            group = e.get("group", "群体")
-            comment = e.get("sample_comment", "")
+if risk_level == "LOW" and not emos:
+    st.info("未检测到需要渲染的学生情绪（该文本更偏事务/日常沟通）。")
+else:
+    risk_col, emo_col = st.columns([1.1, 1], gap="large")
+    with risk_col:
+        st.markdown("**风险点**")
+        if not issues:
+            st.info("未识别到明显风险点。")
+        else:
+            options = [f"{i+1}. {it.get('title','(未命名)')}" for i, it in enumerate(issues)]
+            selected = st.radio(" ", options=options, label_visibility="collapsed", key="risk_pick")
+            idx = int(selected.split(".")[0]) - 1
+            it = issues[idx]
 
             st.markdown(
                 f"""
-                <div style="margin-bottom:16px;">
-                  <span class="blue-tag">{html.escape(str(group))}</span>
-                  <span class="blue-tag">情绪：{html.escape(str(emo))} {emoji}</span>
-                  <span class="blue-tag">强度：{intensity:.2f}</span>
-                  <div class="bubble">{html.escape(str(comment))}</div>
+                <div class='rp-item'>
+                  <div style="font-weight:900; margin-bottom:8px; color:rgba(37,99,235,1);">
+                    触发片段：{html.escape(str(it.get('evidence','')))}
+                  </div>
+                  <div style="margin-top:6px; color:rgba(15,23,42,.88); line-height:1.75;">
+                    <b>原因：</b>{html.escape(str(it.get('why','')))}
+                  </div>
+                  <div style="margin-top:8px; color:rgba(15,23,42,.88); line-height:1.75;">
+                    <b>建议：</b>{html.escape(str(it.get('rewrite_tip','')))}
+                  </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
+
+    with emo_col:
+        st.markdown("**学生情绪**")
+        if not emos:
+            st.info("未生成情绪画像。")
+        else:
+            for e in emos:
+                emo = (e.get("sentiment") or "").strip()
+                emoji = EMOJI_MAP.get(emo, "💭")
+                intensity = clamp01(e.get("intensity", 0))
+                group = e.get("group", "群体")
+                comment = e.get("sample_comment", "")
+
+                st.markdown(
+                    f"""
+                    <div style="margin-bottom:16px;">
+                      <span class="blue-tag">{html.escape(str(group))}</span>
+                      <span class="blue-tag">情绪：{html.escape(str(emo))} {emoji}</span>
+                      <span class="blue-tag">强度：{intensity:.2f}</span>
+                      <div class="bubble">{html.escape(str(comment))}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
 st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
