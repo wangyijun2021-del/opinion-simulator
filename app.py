@@ -585,7 +585,7 @@ def clipboard_copy_fire(text: str):
           }}
         </script>
         """,
-        height=0,
+        height=70,
     )
 
 def pretty_notice(raw: str) -> str:
