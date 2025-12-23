@@ -281,7 +281,7 @@ st.markdown(
 
       .qxz-header-sub{
         justify-content:center !important;
-        margin-top: -6px;
+        margin-top: -12px;
       }
       </style>
     """,
