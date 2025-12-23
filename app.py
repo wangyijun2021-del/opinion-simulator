@@ -72,6 +72,7 @@ st.markdown(
         box-shadow: 0 10px 30px rgba(2,6,23,.06);
         color: rgba(51,65,85,.90); font-size: 14px;
         animation: glow 3.2s ease-in-out infinite;
+        transform: translateX(24px);  /* 往右挪：12/24/36 自己调 */
       }
       .hero-dot{
         width:10px; height:10px; border-radius:999px;
