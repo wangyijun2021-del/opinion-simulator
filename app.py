@@ -245,38 +245,63 @@ st.markdown(
         margin-top: 18px;
         text-align:center;
       }
-    </style>
+      
+      /* ===== Header layout override ===== */
+      .qxz-header-wrap{
+        width: 880px;               /* ✅ 控制整体居中区域宽度：想更窄就 760，想更宽就 980 */
+        margin: 0 auto;             /* ✅ 居中 */
+        padding: 10px 0 6px 0;
+        text-align: center;
+      }
+
+      .qxz-header-top{
+        display:flex;
+        align-items:center;
+        justify-content:center;     /* ✅ logo+标题作为整体居中 */
+        gap: 14px;                  /* ✅ logo 与标题间距：想更近就 8-10 */
+      }
+
+      .qxz-logo{
+        width: 190px;               /* ✅ logo 变大：你要再大三倍就 220/260 */
+        height: auto;
+        filter: drop-shadow(0 14px 22px rgba(37,99,235,.18));
+      }
+
+      .qxz-title{
+        margin: 0;
+        line-height: 1;
+      }
+
+      .qxz-header-sub{
+        justify-content:center !important;
+        margin-top: 14px;
+      }
+      </style>
     """,
     unsafe_allow_html=True,
 )
 
 # =========================
-# Header (centered + tighter gap + bigger logo)
+# Header (strict centered: logo + title in one centered row)
 # =========================
-left_pad, mid, right_pad = st.columns([4, 5, 4])  # ✅ 让整体更居中（两边更“重”）
-with mid:
-    # 上排：logo + 标题（整体居中）
-    top_l, top_r = st.columns([1.2, 3.8], vertical_alignment="center", gap="small")  # ✅ 间距更小
-    with top_l:
-        st.image("logo.png", width=150)  # ✅ logo 更大（你要再大就改成 180/200）
-    with top_r:
-        st.markdown(
-            '<div class="hero-title" style="text-align:left; margin:0;">清小知</div>',
-            unsafe_allow_html=True,
-        )
+st.markdown(
+    """
+    <div class="qxz-header-wrap">
+      <div class="qxz-header-top">
+        <img class="qxz-logo" src="app/static/logo.png" alt="logo" />
+        <div class="qxz-title hero-title">清小知</div>
+      </div>
 
-    # 下排：副标题 pill（居中）
-    st.markdown(
-        """
-        <div class="hero-sub" style="justify-content:center; margin-top:10px;">
-          <div class="hero-pill">
-            <span class="hero-dot"></span>
-            <span>高校通知小助手｜让通知更容易被理解</span>
-          </div>
+      <div class="qxz-header-sub hero-sub">
+        <div class="hero-pill">
+          <span class="hero-dot"></span>
+          <span>高校通知小助手｜让通知更容易被理解</span>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # =========================
 # DeepSeek config
