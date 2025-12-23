@@ -6,6 +6,8 @@ import time
 import requests
 import streamlit as st
 import streamlit.components.v1 as components
+import base64
+from pathlib import Path
 
 # =========================
 # Page config
@@ -280,15 +282,23 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+def img_to_data_uri(path: str) -> str:
+    p = Path(path)
+    if not p.exists():
+        return ""
+    b64 = base64.b64encode(p.read_bytes()).decode("utf-8")
+    return f"data:image/png;base64,{b64}"
 
 # =========================
 # Header (strict centered: logo + title in one centered row)
 # =========================
+logo_uri = img_to_data_uri("logo.png")
+
 st.markdown(
-    """
+    f"""
     <div class="qxz-header-wrap">
       <div class="qxz-header-top">
-        <img class="qxz-logo" src="app/static/logo.png" alt="logo" />
+        <img class="qxz-logo" src="{logo_uri}" alt="logo" />
         <div class="qxz-title hero-title">清小知</div>
       </div>
 
