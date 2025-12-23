@@ -253,10 +253,10 @@ st.markdown(
 # =========================
 # Header (logo left, title right)
 # =========================
-c_logo, c_title = st.columns([1, 8], vertical_alignment="center")
+c_logo, c_title = st.columns([2, 10], gap="medium", vertical_alignment="center")
 
 with c_logo:
-    st.image("logo.png", width=72)
+    st.image("logo.png", width=96)  # 72 -> 96（更像品牌）
 
 with c_title:
     st.markdown(
