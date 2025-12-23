@@ -253,12 +253,10 @@ st.markdown(
 # =========================
 # Header (logo left, title right)
 # =========================
-c_logo, c_title = st.columns([2, 10], gap="medium", vertical_alignment="center")
+c_logo, c_title = st.columns([4, 9], gap="large", vertical_alignment="center")
 
 with c_logo:
-    st.markdown("<div style='display:flex; align-items:center; height:100%;'>", unsafe_allow_html=True)
-    st.image("logo.png", width=104)
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.image("logo.png", width=220)  # 72 的 ~3倍
 
 with c_title:
     st.markdown(
