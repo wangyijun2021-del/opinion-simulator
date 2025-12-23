@@ -272,7 +272,7 @@ st.markdown(
       .qxz-title{
         margin: 0;
         line-height: 1;
-        transform: translateX(-30px);  /* 👈 往左移动，数值越大越靠左 */
+        transform: translateX(-60px);  /* 👈 往左移动，数值越大越靠左 */
       }
 
       .qxz-header-sub{
