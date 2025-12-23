@@ -287,8 +287,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-def img_to_data_uri(path: str) -> str:
-    p = Path(path)
+def img_to_data_uri(rel_path: str) -> str:
+    p = Path(__file__).parent / rel_path
     if not p.exists():
         return ""
     b64 = base64.b64encode(p.read_bytes()).decode("utf-8")
@@ -297,13 +297,13 @@ def img_to_data_uri(path: str) -> str:
 # =========================
 # Header (strict centered: logo + title in one centered row)
 # =========================
-logo_uri = img_to_data_uri("logo.png")
+logo_uri = img_to_data_uri("logo.png")  # logo.png 放在 app.py 同目录
 
 st.markdown(
-    """
+    f"""
     <div class="qxz-header-wrap">
       <div class="qxz-header-top">
-        <img class="qxz-logo" src="app/static/logo.png" alt="logo" />
+        <img class="qxz-logo" src="{logo_uri}" alt="logo" />
         <div class="qxz-title-shift">
           <div class="hero-title">清小知</div>
         </div>
