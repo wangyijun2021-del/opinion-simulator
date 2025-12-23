@@ -260,7 +260,7 @@ st.markdown(
         display:flex;
         align-items:center;
         justify-content:center;     /* ✅ logo+标题作为整体居中 */
-        gap: 14px;                  /* ✅ logo 与标题间距：想更近就 8-10 */
+        gap: 8px;                  /* ✅ logo 与标题间距：想更近就 8-10 */
       }
 
       .qxz-logo{
@@ -273,6 +273,10 @@ st.markdown(
         margin: 0;
         line-height: 1;
         transform: translateX(-60px);  /* 👈 往左移动，数值越大越靠左 */
+      }
+
+      .qxz-title-shift{
+        transform: translateX(-60px);  /* 👈 往左挪，-30 / -60 / -90 自己调 */
       }
 
       .qxz-header-sub{
@@ -296,11 +300,13 @@ def img_to_data_uri(path: str) -> str:
 logo_uri = img_to_data_uri("logo.png")
 
 st.markdown(
-    f"""
+    """
     <div class="qxz-header-wrap">
       <div class="qxz-header-top">
-        <img class="qxz-logo" src="{logo_uri}" alt="logo" />
-        <div class="qxz-title hero-title">清小知</div>
+        <img class="qxz-logo" src="app/static/logo.png" alt="logo" />
+        <div class="qxz-title-shift">
+          <div class="hero-title">清小知</div>
+        </div>
       </div>
 
       <div class="qxz-header-sub hero-sub">
