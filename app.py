@@ -251,23 +251,22 @@ st.markdown(
 )
 
 # =========================
-# Header (logo left, title right)
+# Header (centered container)
 # =========================
-c_logo, c_title = st.columns([4, 9], gap="large", vertical_alignment="center")
+sp1, mid, sp2 = st.columns([3, 6, 3])  # 两边空白，中间内容区
+with mid:
+    top = st.columns([2, 5], vertical_alignment="center")
+    with top[0]:
+        st.image("logo.png", width=220)
+    with top[1]:
+        st.markdown('<div class="hero-title" style="text-align:left;">清小知</div>', unsafe_allow_html=True)
 
-with c_logo:
-    st.image("logo.png", width=220)  # 72 的 ~3倍
-
-with c_title:
     st.markdown(
         """
-        <div class="hero" style="text-align:left; padding: 6px 0 6px 0;">
-          <div class="hero-title">清小知</div>
-          <div class="hero-sub" style="justify-content:flex-start;">
-            <div class="hero-pill">
-              <span class="hero-dot"></span>
-              <span>高校通知小助手｜让通知更容易被理解</span>
-            </div>
+        <div class="hero-sub" style="justify-content:center; margin-top:10px;">
+          <div class="hero-pill">
+            <span class="hero-dot"></span>
+            <span>高校通知小助手｜让通知更容易被理解</span>
           </div>
         </div>
         """,
