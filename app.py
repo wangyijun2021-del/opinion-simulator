@@ -251,16 +251,21 @@ st.markdown(
 )
 
 # =========================
-# Header (centered container)
+# Header (centered + tighter gap + bigger logo)
 # =========================
-sp1, mid, sp2 = st.columns([3, 6, 3])  # 两边空白，中间内容区
+left_pad, mid, right_pad = st.columns([4, 5, 4])  # ✅ 让整体更居中（两边更“重”）
 with mid:
-    top = st.columns([2, 5], vertical_alignment="center")
-    with top[0]:
-        st.image("logo.png", width=220)
-    with top[1]:
-        st.markdown('<div class="hero-title" style="text-align:left;">清小知</div>', unsafe_allow_html=True)
+    # 上排：logo + 标题（整体居中）
+    top_l, top_r = st.columns([1.2, 3.8], vertical_alignment="center", gap="small")  # ✅ 间距更小
+    with top_l:
+        st.image("logo.png", width=150)  # ✅ logo 更大（你要再大就改成 180/200）
+    with top_r:
+        st.markdown(
+            '<div class="hero-title" style="text-align:left; margin:0;">清小知</div>',
+            unsafe_allow_html=True,
+        )
 
+    # 下排：副标题 pill（居中）
     st.markdown(
         """
         <div class="hero-sub" style="justify-content:center; margin-top:10px;">
