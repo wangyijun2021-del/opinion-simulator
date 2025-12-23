@@ -256,7 +256,9 @@ st.markdown(
 c_logo, c_title = st.columns([2, 10], gap="medium", vertical_alignment="center")
 
 with c_logo:
-    st.image("logo.png", width=96)  # 72 -> 96（更像品牌）
+    st.markdown("<div style='display:flex; align-items:center; height:100%;'>", unsafe_allow_html=True)
+    st.image("logo.png", width=104)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with c_title:
     st.markdown(
