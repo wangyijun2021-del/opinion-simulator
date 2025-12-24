@@ -992,7 +992,7 @@ else:
             st.info("未识别到明显风险点。")
         else:
             options = [f"{i+1}. {it.get('title','(未命名)')}" for i, it in enumerate(issues)]
-            selected = st.radio(" ", options=options, label_visibility="collapsed", key="risk_pick")
+            selected = st.radio(" ", options=options, index=0, label_visibility="collapsed", key="risk_pick")
             idx = int(selected.split(".")[0]) - 1
             it = issues[idx]
 
