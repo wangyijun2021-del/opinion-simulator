@@ -633,6 +633,39 @@ def risk_gate(text: str) -> dict:
         "type": ntype,
         "transactional": transactional,
     }
+def normalize_issues(issues: list, raw_text: str) -> list:
+    if not issues:
+        return []
+
+    BAD_TITLES = {"风险点标题", "未命名", "(未命名)", "风险点", "标题", "", None}
+
+    fixed = []
+    used = set()
+
+    for i, it in enumerate(issues):
+        it = it or {}
+        title = (it.get("title") or "").strip()
+        evidence = (it.get("evidence") or "").strip()
+
+        # evidence 兜底：没有就从原文截一段
+        if not evidence:
+            t = (raw_text or "").strip().replace("\n", " ")
+            evidence = (t[:12] + "…") if len(t) > 12 else t
+            it["evidence"] = evidence
+
+        # title 修复：如果是占位词/空，改成根据 evidence 的标题
+        if (not title) or (title in BAD_TITLES) or (title.startswith("风险点")):
+            title = f"触发片段：{evidence[:12]}{'…' if len(evidence) > 12 else ''}"
+            it["title"] = title
+
+        # 防止重复：重复就加编号
+        if it["title"] in used:
+            it["title"] = f"{it['title']}（{i+1}）"
+        used.add(it["title"])
+
+        fixed.append(it)
+
+    return fixed
 
 # =========================
 # Model analyze（降低“过敏”）
@@ -775,6 +808,7 @@ def analyze(text: str, scenario: str, profile: dict):
                 if len(fixed) >= 3:
                     break
         parsed["rewrites"] = fixed[:3]
+        parsed["issues"] = normalize_issues(parsed.get("issues", []) or [], text)
 
         # ---------- 硬规则后处理：Risk Gate 强制降敏 ----------
         # 以本地 gate 为准（避免模型误判）
