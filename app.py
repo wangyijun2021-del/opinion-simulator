@@ -954,7 +954,6 @@ if rg:
         <div class="card" style="margin-top:12px;">
           <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
             <div style="font-weight:900; font-size:15px; line-height:1.25;">发布前风险提示：{html.escape(str(rg.get("type","")))} </div>
-            <span class="blue-tag"></span>
           </div>
           <div class="muted" style="margin-top:10px; font-size:13px; line-height:1.65;">
             {html.escape(str(rg.get("reason","")))}
