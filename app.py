@@ -325,7 +325,9 @@ st.markdown(
 # DeepSeek config
 # =========================
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-API_URL = "https://api.deepseek.com/chat/completions"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# API_URL = "https://api.deepseek.com/chat/completions"
+API_URL = "https://api.openai.com/v1/responses"ns"
 
 if not DEEPSEEK_API_KEY:
     st.error(
@@ -397,6 +399,24 @@ def call_deepseek(system_prompt: str, user_prompt: str, model: str = "deepseek-c
     payload = {
         "model": model,
         "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+        "temperature": 0.3,
+    }
+    r = requests.post(API_URL, headers=headers, json=payload, timeout=90)
+    r.raise_for_status()
+    data = r.json()
+    return data["choices"][0]["message"]["content"]
+
+def call_gpt(system_prompt: str, user_prompt: str, model: str = "gpt-5.1"):
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
         "temperature": 0.3,
     }
     r = requests.post(API_URL, headers=headers, json=payload, timeout=90)
@@ -784,7 +804,8 @@ def analyze(text: str, scenario: str, profile: dict):
 """
 
     try:
-        content = call_deepseek(system_prompt, user_prompt)
+        # content = call_deepseek(system_prompt, user_prompt)
+        content = call_gpt(system_prompt, user_prompt)
         parsed, _ = safe_extract_json(content)
         if parsed is None:
             return local_fallback(text)
