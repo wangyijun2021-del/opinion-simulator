@@ -406,7 +406,7 @@ def call_deepseek(system_prompt: str, user_prompt: str, model: str = "deepseek-c
     data = r.json()
     return data["choices"][0]["message"]["content"]
 
-def call_gpt(system_prompt: str, user_prompt: str, model: str = "gpt-5.1"):
+def call_gpt(system_prompt: str, user_prompt: str, model: str = "gpt-5"):
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json",
