@@ -1028,7 +1028,25 @@ else:
     with risk_col:
         st.markdown("**风险点**")
         if not issues:
-            st.info("未识别到明显风险点。")
+            if risk_level in ["MEDIUM", "HIGH"]:
+                st.markdown(
+                    """
+                    <div class="card" style="background: rgba(37,99,235,0.05);">
+                      <div style="font-weight:900;">潜在争议点（规则层面）</div>
+                      <div class="muted" style="margin-top:8px;">
+                        系统判断该通知存在<strong>规则口径 / 后果表达 / 执行范围</strong>
+                        可能引发争议的风险，但尚未定位到单一触发句。
+                        建议重点检查是否存在：
+                        <br>· 处理后果是否明确
+                        <br>· 执行对象是否清晰
+                        <br>· 是否存在例外或申诉渠道
+                      </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.info("未识别到明显风险点。")
         else:
             # --- 修复：title 可能是占位符“风险点标题”，用 evidence/why 兜底 ---
             def _safe_issue_title(it: dict) -> str:
@@ -1072,7 +1090,22 @@ else:
     with emo_col:
         st.markdown("**学生情绪**")
         if not emos:
-            st.info("未生成情绪画像。")
+            if risk_level in ["MEDIUM", "HIGH"]:
+                st.markdown(
+                    """
+                    <div class="card" style="background: rgba(37,99,235,0.05);">
+                      <div style="font-weight:900;">可能存在分化情绪</div>
+                      <div class="muted" style="margin-top:8px;">
+                        该类通知通常不会引发统一情绪，
+                        但在部分受众中可能产生<strong>担忧 / 紧张 / 不确定感</strong>。
+                        是否出现情绪波动，与发布对象和场景密切相关。
+                      </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.info("未生成情绪画像。")
         else:
             for e in emos:
                 emo = (e.get("sentiment") or "").strip()
