@@ -327,7 +327,7 @@ st.markdown(
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # API_URL = "https://api.deepseek.com/chat/completions"
-API_URL = "https://api.openai.com/v1/responses"ns"
+API_URL = "https://api.openai.com/v1/responses"
 
 if not DEEPSEEK_API_KEY:
     st.error(
