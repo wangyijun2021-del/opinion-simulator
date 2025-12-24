@@ -326,8 +326,8 @@ st.markdown(
 # =========================
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-# API_URL = "https://api.deepseek.com/chat/completions"
-API_URL = "https://api.openai.com/v1/responses"
+API_URL = "https://api.deepseek.com/chat/completions"
+# API_URL = "https://api.openai.com/v1/responses"
 
 if not DEEPSEEK_API_KEY:
     st.error(
@@ -804,8 +804,8 @@ def analyze(text: str, scenario: str, profile: dict):
 """
 
     try:
-        # content = call_deepseek(system_prompt, user_prompt)
-        content = call_gpt(system_prompt, user_prompt)
+        content = call_deepseek(system_prompt, user_prompt)
+        # content = call_gpt(system_prompt, user_prompt)
         parsed, _ = safe_extract_json(content)
         if parsed is None:
             return local_fallback(text)
