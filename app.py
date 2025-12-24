@@ -417,7 +417,7 @@ def call_gpt(system_prompt: str, user_prompt: str, model: str = "gpt-5.1"):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        "temperature": 0.3,
+        "temperature": 0.9,
     }
     r = requests.post(API_URL, headers=headers, json=payload, timeout=90)
     r.raise_for_status()
