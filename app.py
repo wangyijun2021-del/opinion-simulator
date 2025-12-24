@@ -990,7 +990,7 @@ else:
         st.markdown("**风险点**")
         if not issues:
             st.info("未识别到明显风险点。")
-                else:
+        else:
             # --- 修复：title 可能是占位符“风险点标题”，用 evidence/why 兜底 ---
             def _safe_issue_title(it: dict) -> str:
                 t = (it.get("title") or "").strip()
