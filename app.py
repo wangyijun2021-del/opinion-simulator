@@ -967,32 +967,51 @@ if not result:
 
 render_overview(int(result.get("risk_score", 0)), result.get("risk_level", "LOW"), result.get("summary", ""))
 
-# Risk Gate 小提示（用于解释“为什么不挑刺”）
+# Risk Gate（给用户看的解释卡片：不要暴露 is_substantive）
 rg = result.get("risk_gate", {}) or {}
+issues = result.get("issues", []) or []
+
+def _display_risk_badge(risk_level: str, rg: dict, issues: list[dict]) -> tuple[str, str]:
+    """
+    返回：(badge_text, reason_text)
+    badge_text: 给用户看的“判断标签”
+    reason_text: 更口语的解释
+    """
+    is_sub = bool(rg.get("is_substantive", False))
+    rtype = (rg.get("type") or "").strip()
+
+    # ✅ 不到门槛，但仍然有 issues：展示为“潜在争议点（表达层面）”
+    if (not is_sub) and len(issues) > 0:
+        return ("潜在争议点（表达层面）", "未触发实质舆情门槛，但存在容易被误读/引发吐槽的表述点，可做表达优化。")
+
+    # ✅ 不到门槛 & 也没 issues：就是纯事务
+    if (not is_sub) and len(issues) == 0:
+        return ("日常事务通知", "文本未出现惩戒后果、资源分配或纪律处分等争议触发因素。")
+
+    # ✅ 触发门槛：按风险等级展示
+    level_cn = {"LOW": "低风险", "MEDIUM": "中风险", "HIGH": "高风险"}.get(risk_level, "风险提示")
+    # 你也可以把 rtype 拼进去：f"{level_cn}｜{rtype}"
+    return (level_cn, "检测到可能引发争议的触发因素（如后果条款/权益分配/纪律处分/强约束），建议重点核对口径与例外。")
+
 if rg:
+    badge, reason = _display_risk_badge(result.get("risk_level", "LOW"), rg, issues)
+
     st.markdown(
         f"""
         <div class="card" style="margin-top:12px;">
           <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-            <div style="font-weight:900; font-size:15px; line-height:1.25;">发布前风险提示：{html.escape(str(rg.get("type","")))} </div>
+            <div style="font-weight:900; font-size:15px; line-height:1.25;">
+              风险判断：{html.escape(badge)}
+            </div>
+            <span class="blue-tag">{html.escape(str(rg.get("type","")))} </span>
           </div>
           <div class="muted" style="margin-top:10px; font-size:13px; line-height:1.65;">
-            {html.escape(str(rg.get("reason","")))}
+            {html.escape(reason)}
           </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-issues = result.get("issues", []) or []
-phrases = [(it.get("evidence") or "").strip() for it in issues if (it.get("evidence") or "").strip()]
-
-if current_text.strip() and phrases:
-    st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="section-h">原文标注</div>', unsafe_allow_html=True)
-    st.markdown(highlight_text_html(current_text, phrases), unsafe_allow_html=True)
-
-st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
 # =========================
 # Emotion Prediction（LOW 默认不渲染，避免“吓人”）
