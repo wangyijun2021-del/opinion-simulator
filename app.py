@@ -990,24 +990,25 @@ else:
         st.markdown("**风险点**")
         if not issues:
             st.info("未识别到明显风险点。")
-        else:
+                else:
             # --- 修复：title 可能是占位符“风险点标题”，用 evidence/why 兜底 ---
-def _safe_issue_title(it: dict) -> str:
-    t = (it.get("title") or "").strip()
-    ev = (it.get("evidence") or "").strip()
-    why = (it.get("why") or "").strip()
+            def _safe_issue_title(it: dict) -> str:
+                t = (it.get("title") or "").strip()
+                ev = (it.get("evidence") or "").strip()
+                why = (it.get("why") or "").strip()
 
-    bad = {"风险点标题", "(未命名)", "未命名", "风险点", "标题"}
-    if (not t) or (t in bad) or ("风险点标题" in t):
-        if ev:
-            return f"触发：{ev}"
-        if why:
-            return (why[:14] + "…") if len(why) > 14 else why
-        return "风险点"
-    return t
+                bad = {"风险点标题", "(未命名)", "未命名", "风险点", "标题"}
+                if (not t) or (t in bad) or ("风险点标题" in t):
+                    if ev:
+                        return f"触发：{ev}"
+                    if why:
+                        return (why[:14] + "…") if len(why) > 14 else why
+                    return "风险点"
+                return t
 
-options = [f"{i+1}. {_safe_issue_title(it)}" for i, it in enumerate(issues)]
-selected = st.radio(" ", options=options, index=0, label_visibility="collapsed", key="risk_pick")
+            options = [f"{i+1}. {_safe_issue_title(it)}" for i, it in enumerate(issues)]
+            selected = st.radio(" ", options=options, index=0, label_visibility="collapsed", key="risk_pick")
+
             idx = int(selected.split(".")[0]) - 1
             it = issues[idx]
 
@@ -1027,6 +1028,7 @@ selected = st.radio(" ", options=options, index=0, label_visibility="collapsed",
                 """,
                 unsafe_allow_html=True,
             )
+   
 
     with emo_col:
         st.markdown("**学生情绪**")
